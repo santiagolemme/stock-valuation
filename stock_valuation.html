@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stock Valuation Tool — Mag7</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',sans-serif;background:#0f1117;color:#e0e0e0;min-height:100vh}
+
+.header{background:linear-gradient(135deg,#1a1f2e,#252d3d);padding:16px 28px;border-bottom:2px solid #2d6a4f;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.header h1{font-size:1.35rem;color:#4ade80}
+.header p{font-size:.78rem;color:#94a3b8;margin-top:2px}
+.load-btn{padding:8px 16px;border-radius:7px;border:1px dashed #4ade80;background:transparent;color:#4ade80;cursor:pointer;font-size:.82rem;font-weight:600;transition:all .2s}
+.load-btn:hover{background:#4ade80;color:#000}
+#fileInput{display:none}
+
+/* Ticker selector */
+.ticker-bar{padding:12px 28px;background:#141822;border-bottom:1px solid #1e2533;display:none;flex-wrap:wrap;gap:8px;align-items:center}
+.ticker-btn{padding:7px 16px;border-radius:20px;border:1px solid #2d3748;background:#1a1f2e;color:#94a3b8;cursor:pointer;font-size:.82rem;font-weight:600;transition:all .2s}
+.ticker-btn:hover{border-color:#4ade80;color:#4ade80}
+.ticker-btn.active{background:#2d6a4f;border-color:#4ade80;color:#fff}
+.last-update{font-size:.72rem;color:#4b5563;margin-left:auto}
+
+/* Parameters */
+.params-bar{padding:10px 28px;background:#0f1117;border-bottom:1px solid #1e2533;display:none;flex-wrap:wrap;gap:10px;align-items:flex-end}
+.tgroup{display:flex;flex-direction:column;gap:3px}
+.tlabel{font-size:.72rem;color:#94a3b8;white-space:nowrap}
+input[type=number]{width:68px;padding:6px 8px;border-radius:6px;border:1px solid #2d3748;background:#1e2533;color:#fff;font-size:.83rem;text-align:center;outline:none}
+input[type=number]:focus{border-color:#4ade80}
+.btn{padding:7px 18px;border-radius:7px;border:none;cursor:pointer;font-weight:600;font-size:.83rem;transition:all .2s;align-self:flex-end}
+.btn-primary{background:#2d6a4f;color:#fff}
+.btn-primary:hover{background:#4ade80;color:#000}
+.sep{width:1px;height:32px;background:#2d3748;margin:0 4px;align-self:center}
+
+/* Empty */
+.empty-state{text-align:center;padding:80px 20px;color:#4b5563}
+.empty-state .icon{font-size:3.5rem;margin-bottom:16px}
+.empty-state p{font-size:.92rem;margin-top:6px}
+.empty-state code{background:#1a1f2e;padding:2px 8px;border-radius:4px;color:#4ade80;font-size:.85rem}
+
+/* Content */
+.content{display:none;padding:20px 28px}
+
+.s-header{display:flex;flex-wrap:wrap;gap:16px;margin-bottom:18px;align-items:flex-start}
+.s-title{flex:1;min-width:200px}
+.s-title h2{font-size:1.5rem;color:#fff}
+.s-title .sub{font-size:.78rem;color:#94a3b8;margin-top:3px}
+.price-card{background:#1a1f2e;border:1px solid #2d3748;border-radius:10px;padding:12px 22px;text-align:center}
+.price-card .price{font-size:1.9rem;font-weight:700;color:#4ade80}
+.price-card .chg{font-size:.82rem;margin-top:3px}
+.pos{color:#4ade80}.neg-c{color:#f87171}
+
+.kpi-strip{display:grid;grid-template-columns:repeat(auto-fill,minmax(125px,1fr));gap:9px;margin-bottom:18px}
+.kpi{background:#1a1f2e;border:1px solid #2d3748;border-radius:8px;padding:11px 9px}
+.kpi .kl{font-size:.66rem;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px}
+.kpi .kv{font-size:.95rem;font-weight:600;color:#e2e8f0}
+
+.verdict{border-radius:10px;padding:14px 20px;margin-bottom:18px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.verdict.buy{background:linear-gradient(135deg,#052e16,#14532d);border:1px solid #166534}
+.verdict.hold{background:linear-gradient(135deg,#1c1a05,#3a350a);border:1px solid #713f12}
+.verdict.sell{background:linear-gradient(135deg,#1f0505,#450a0a);border:1px solid #7f1d1d}
+.v-icon{font-size:2rem}
+.v-text h3{font-size:1rem;font-weight:700}
+.verdict.buy .v-text h3{color:#4ade80}
+.verdict.hold .v-text h3{color:#fbbf24}
+.verdict.sell .v-text h3{color:#f87171}
+.v-text p{font-size:.78rem;color:#94a3b8;margin-top:2px}
+.v-right{margin-left:auto;text-align:right}
+.v-right .pct{font-size:1.7rem;font-weight:700}
+.verdict.buy .v-right .pct{color:#4ade80}
+.verdict.hold .v-right .pct{color:#fbbf24}
+.verdict.sell .v-right .pct{color:#f87171}
+.v-right .vlbl{font-size:.7rem;color:#94a3b8}
+
+.sec-title{font-size:.75rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;border-left:3px solid #4ade80;padding-left:8px;margin-bottom:9px}
+.t-wrap{overflow-x:auto;margin-bottom:20px;border-radius:8px;border:1px solid #1e2533}
+table{width:100%;border-collapse:collapse;font-size:.78rem}
+thead th{background:#1e2d40;padding:8px 11px;text-align:right;color:#94a3b8;font-weight:600;white-space:nowrap}
+thead th:first-child{text-align:left;min-width:180px}
+tbody tr{border-top:1px solid #141822}
+tbody tr:hover{background:#161c28}
+tbody td{padding:7px 11px;text-align:right;color:#e2e8f0;white-space:nowrap}
+tbody td:first-child{text-align:left;color:#94a3b8}
+.est{color:#4ade80!important;font-style:italic}
+.est-bg{background:rgba(74,222,128,.04)!important}
+.red-v{color:#f87171!important}
+.hl td{color:#fbbf24!important;font-weight:700}
+.avg-row td{color:#fbbf24!important;font-weight:700}
+.ms-row td{color:#60a5fa!important}
+
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+@media(max-width:660px){.grid2{grid-template-columns:1fr}}
+.box{background:#1a1f2e;border:1px solid #2d3748;border-radius:9px;padding:14px}
+.box h3{font-size:.72rem;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
+.mrow{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid #141822;font-size:.8rem;gap:6px}
+.mrow:last-child{border-bottom:none}
+.ml{color:#94a3b8;flex:1}.mv{color:#e2e8f0;font-weight:600}.mt{color:#fbbf24;font-weight:700}
+
+.chart-wrap{background:#1a1f2e;border:1px solid #2d3748;border-radius:9px;padding:14px;margin-bottom:20px}
+.chart-wrap h3{font-size:.72rem;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px}
+
+.note{font-size:.68rem;color:#374151;text-align:center;padding:10px}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>📈 Stock Valuation Tool — Mag7</h1>
+    <p>Datos desde yfinance · Sin dependencia de APIs externas</p>
+  </div>
+  <div style="display:flex;gap:10px;align-items:center">
+    <button class="load-btn" onclick="document.getElementById('fileInput').click()">📂 Cargar JSON</button>
+    <input type="file" id="fileInput" accept=".json" onchange="loadFile(event)">
+  </div>
+</div>
+
+<div class="ticker-bar" id="tickerBar"></div>
+
+<div class="params-bar" id="paramsBar">
+  <div class="tgroup"><span class="tlabel">PER obj.</span><input type="number" id="t_per" value="20" step="0.5"></div>
+  <div class="tgroup"><span class="tlabel">EV/FCF</span><input type="number" id="t_evcf" value="20" step="0.5"></div>
+  <div class="tgroup"><span class="tlabel">EV/EBITDA</span><input type="number" id="t_evebitda" value="11" step="0.5"></div>
+  <div class="tgroup"><span class="tlabel">EV/EBIT</span><input type="number" id="t_evebit" value="14" step="0.5"></div>
+  <div class="tgroup"><span class="tlabel">Crec. % anual</span><input type="number" id="t_growth" value="12" step="1"></div>
+  <div class="tgroup"><span class="tlabel">WACC %</span><input type="number" id="t_wacc" value="10" step="0.5"></div>
+  <div class="sep"></div>
+  <button class="btn btn-primary" onclick="recalc()">⟳ Recalcular</button>
+</div>
+
+<div class="empty-state" id="emptyState">
+  <div class="icon">📂</div>
+  <p>Primero corré el script Python en Jupyter para generar el archivo de datos:</p>
+  <p style="margin-top:12px"><code>magnificent7.json</code></p>
+  <p style="margin-top:12px;font-size:.8rem">Luego hacé clic en <strong style="color:#4ade80">Cargar JSON</strong> para comenzar el análisis.</p>
+</div>
+
+<div class="content" id="content"></div>
+<div class="note">⚠️ Las proyecciones son estimaciones. No constituye asesoramiento financiero.</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+let DB = {};          // todos los datos del JSON
+let currentTicker = null;
+let chartInst = null;
+
+// ── Cargar archivo ─────────────────────────────────────────────────────────
+function loadFile(evt) {
+  const file = evt.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      DB = JSON.parse(e.target.result);
+      initUI();
+    } catch(err) {
+      alert('Error al leer el JSON: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+}
+
+function initUI() {
+  const tickers = Object.keys(DB);
+  if (!tickers.length) return alert('El JSON está vacío.');
+
+  // Ticker bar
+  const bar = document.getElementById('tickerBar');
+  const firstFetched = DB[tickers[0]]?.fetched_at;
+  bar.innerHTML = tickers.map(t =>
+    `<button class="ticker-btn" id="btn_${t}" onclick="selectTicker('${t}')">${t}</button>`
+  ).join('') +
+  (firstFetched ? `<span class="last-update">Actualizado: ${new Date(firstFetched).toLocaleString('es-AR')}</span>` : '');
+
+  bar.style.display = 'flex';
+  document.getElementById('paramsBar').style.display = 'flex';
+  document.getElementById('emptyState').style.display = 'none';
+
+  selectTicker(tickers[0]);
+}
+
+function selectTicker(ticker) {
+  currentTicker = ticker;
+  document.querySelectorAll('.ticker-btn').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById('btn_' + ticker);
+  if (btn) btn.classList.add('active');
+  render(ticker);
+}
+
+function recalc() {
+  if (currentTicker) render(currentTicker);
+}
+
+// ── Render ─────────────────────────────────────────────────────────────────
+function render(ticker) {
+  const d = DB[ticker];
+  if (!d) return;
+
+  const hist   = d.historical || [];
+  const N      = hist.length;
+  if (!N) { alert('Sin datos históricos para ' + ticker); return; }
+
+  // ── Precio & perfil ──
+  const price    = d.price     || 0;
+  const prev     = d.prev_close|| price;
+  const chg      = price - prev;
+  const chgPct   = prev ? (chg/prev)*100 : 0;
+  const mktCap   = d.mkt_cap   || 0;
+  const shares   = d.shares    || 1;
+  const currency = d.currency  || 'USD';
+
+  // ── Histórico ──
+  const histYears = hist.map(r => r.year);
+  const hRev    = hist.map(r => r.revenue   || 0);
+  const hEbitda = hist.map(r => r.ebitda    || 0);
+  const hEbit   = hist.map(r => r.ebit      || 0);
+  const hNI     = hist.map(r => r.net_income|| 0);
+  const hFCF    = hist.map(r => r.fcf       || 0);
+  const hEPS    = hist.map(r => r.eps       || 0);
+  const hND     = hist.map(r => r.net_debt  || 0);
+
+  const lastRev    = hRev[N-1],    lastEbitda = hEbitda[N-1];
+  const lastEbit   = hEbit[N-1],   lastNI     = hNI[N-1];
+  const lastFCF    = hFCF[N-1],    lastEPS    = hEPS[N-1];
+  const curNetDebt = hND[N-1];
+  const ev         = mktCap + curNetDebt;
+
+  // ── Múltiplos LTM ──
+  const mPER      = lastNI     ? mktCap / lastNI     : 0;
+  const mEVCF     = lastFCF    ? ev     / lastFCF    : 0;
+  const mEVEBITDA = lastEbitda ? ev     / lastEbitda : 0;
+  const mEVEBIT   = lastEbit   ? ev     / lastEbit   : 0;
+
+  // ── Parámetros ──
+  const tPER      = +document.getElementById('t_per').value      || 20;
+  const tEVCF     = +document.getElementById('t_evcf').value     || 20;
+  const tEVEBITDA = +document.getElementById('t_evebitda').value || 11;
+  const tEVEBIT   = +document.getElementById('t_evebit').value   || 14;
+  const growth    = (+document.getElementById('t_growth').value  || 12) / 100;
+  const wacc      = (+document.getElementById('t_wacc').value    || 10) / 100;
+  const termG     = 0.03;
+  const PROJ      = 5;
+
+  // ── Proyecciones ──
+  // El último año puede ser "TTM (2025-12)" → extraer el número
+  const lastYearRaw = histYears[N-1];
+  const lastYear    = parseInt(lastYearRaw.toString().match(/\d{4}/)?.[0] || lastYearRaw);
+  const projYears   = Array.from({length:PROJ}, (_,i) => lastYear + i + 1);
+  const proj = base => Array.from({length:PROJ}, (_,i) => base * (1+growth)**(i+1));
+  const pRev    = proj(lastRev);
+  const pEbitda = proj(lastEbitda);
+  const pEbit   = proj(lastEbit);
+  const pNI     = proj(lastNI);
+  const pFCF    = proj(lastFCF);
+  const pEPS    = proj(lastEPS);
+
+  // ── Valor Intrínseco — solo PER y EV/FCF ──
+  const sh = shares || 1;
+  const ivPER  = pNI.map(v  => (v * tPER) / sh);
+  const ivEVCF = pFCF.map(v => (v * tEVCF - curNetDebt) / sh);
+  const ivAvg  = ivPER.map((_,i) => (ivPER[i] + ivEVCF[i]) / 2);
+
+  // ── DCF ──
+  const pvFCF    = pFCF.reduce((s,v,i) => s + v/(1+wacc)**(i+1), 0);
+  const terminal = pFCF[PROJ-1] * (1+termG) / (wacc - termG);
+  const dcfPrice = (pvFCF + terminal/(1+wacc)**PROJ - curNetDebt) / sh;
+
+  // ── Veredicto ──
+  const upside5 = price ? (ivAvg[4]/price - 1)*100 : 0;
+  const vClass  = upside5 > 20 ? 'buy' : upside5 < -15 ? 'sell' : 'hold';
+  const vIcon   = upside5 > 20 ? '🟢' : upside5 < -15 ? '🔴' : '⏸️';
+  const vLabel  = upside5 > 20 ? 'COMPRA' : upside5 < -15 ? 'CARA / VENTA' : 'MANTENER';
+  const vDesc   = upside5 > 20
+    ? 'Cotiza con descuento significativo vs su valor intrínseco estimado.'
+    : upside5 < -15
+    ? 'Podría estar sobrevaluada respecto a su valor intrínseco estimado.'
+    : 'Cotiza cerca de su valor intrínseco estimado.';
+
+  // ── Helpers ──
+  const fm  = (v,dec=0) => (v==null||isNaN(v)) ? '—' : v.toLocaleString('es-AR',{minimumFractionDigits:dec,maximumFractionDigits:dec});
+  const fmM = v => {
+    if (!v||isNaN(v)) return '—';
+    const s=v<0?'-':'', a=Math.abs(v)/1e6;
+    if(a>=1e6) return s+(a/1e6).toFixed(2)+'T';
+    if(a>=1e3) return s+(a/1e3).toFixed(1)+'B';
+    return s+a.toFixed(0)+'M';
+  };
+  const fmX = v => v ? fm(v,1)+'x' : '—';
+
+  const allYears  = [...histYears, ...projYears.map(y=>y+'e')];
+  const allRev    = [...hRev,    ...pRev];
+  const allEbitda = [...hEbitda, ...pEbitda];
+  const allEbit   = [...hEbit,   ...pEbit];
+  const allNI     = [...hNI,     ...pNI];
+  const allFCF    = [...hFCF,    ...pFCF];
+  const allEPS    = [...hEPS,    ...pEPS];
+  const allND     = [...hND,     ...Array(PROJ).fill(curNetDebt)];
+
+  const thCols = allYears.map((y,i) =>
+    `<th class="${i>=N?'est':''}">${y}</th>`).join('');
+
+  const metricRow = (lbl, vals, div=1e6, dec=0, hl=false) =>
+    `<tr class="${hl?'hl':''}"><td>${lbl}</td>${
+      vals.map((v,i)=>{const dv=v/div;return `<td class="${i>=N?'est est-bg':''} ${dv<0?'red-v':''}">${fm(dv,dec)}</td>`;}).join('')
+    }</tr>`;
+
+  const ivRowHtml = (lbl, arr, isAvg=false) => {
+    const cagr = price&&arr[4] ? ((arr[4]/price)**(1/5)-1)*100 : 0;
+    const cc   = cagr>12?'#4ade80':cagr>6?'#fbbf24':'#f87171';
+    return `<tr class="${isAvg?'avg-row':''}">
+      <td>${lbl}</td>
+      ${arr.map(v=>`<td class="${isAvg?'':'est est-bg'}" style="${isAvg?'color:#fbbf24;font-weight:700':''}">${fm(v,2)}</td>`).join('')}
+      <td style="color:${cc};font-weight:700">${fm(cagr,1)}%</td>
+    </tr>`;
+  };
+
+  const msRowHtml = () => `<tr class="ms-row"><td>Margen de Seguridad</td>${
+    ivAvg.map(v=>{const ms=price?(v/price-1)*100:0;return `<td style="color:${ms>0?'#4ade80':'#f87171'};font-weight:600">${ms>0?'+':''}${fm(ms,0)}%</td>`;}).join('')
+  }<td>—</td></tr>`;
+
+  const multRow = (lbl,ltm,tgt) => {
+    const diff=ltm&&tgt?ltm-tgt:null;
+    const dc=diff!==null?(diff<=0?'#4ade80':'#f87171'):'#94a3b8';
+    return `<div class="mrow">
+      <span class="ml">${lbl}</span><span class="mv">${fmX(ltm)}</span>
+      <span class="mt">Obj: ${fm(tgt,1)}x</span>
+      <span style="color:${dc};font-weight:700;min-width:46px;text-align:right">${diff!==null?fm(diff,1)+'x':'—'}</span>
+    </div>`;
+  };
+
+  const cagrRow = (lbl,arr) => {
+    const c=price&&arr[4]?((arr[4]/price)**(1/5)-1)*100:0;
+    const col=c>15?'#4ade80':c>8?'#fbbf24':'#f87171';
+    return `<div class="mrow"><span class="ml">${lbl}</span><span style="color:${col};font-weight:700">${fm(c,0)}%</span></div>`;
+  };
+
+  // ── Métricas de calidad ──
+  // Y/Y growth helper
+  const yoyGrowth = arr => arr.map((v,i) => {
+    if (i===0 || !arr[i-1]) return null;
+    return arr[i-1]!==0 ? (v/arr[i-1]-1)*100 : null;
+  });
+
+  // EBIT Margin = EBIT / Revenue
+  const ebitMargin = allRev.map((v,i) => v ? allEbit[i]/v*100 : null);
+  // Net Margin = NI / Revenue
+  const netMargin  = allRev.map((v,i) => v ? allNI[i]/v*100   : null);
+  // Precios históricos (del JSON)
+  const allHistPrice = [
+    ...hist.map(r => r.hist_price || null),   // histórico + TTM = precio actual
+    ...Array(PROJ).fill(null)                  // proyectado: no aplica precio
+  ];
+  // Reemplazar el último (TTM) con precio actual
+  allHistPrice[N - 1] = price;
+
+  // PER:
+  //   Histórico:  hist_price / EPS anual
+  //   TTM:        precio actual / EPS TTM
+  //   Proyectado: precio objetivo PER (ivPER[i]) / EPS proyectado
+  const perAll = allYears.map((y, i) => {
+    const eps = allEPS[i];
+    if (!eps) return null;
+    if (i < N) {
+      // histórico + TTM
+      const p = allHistPrice[i];
+      return p ? p / eps : null;
+    } else {
+      // proyectado: precio objetivo PER / EPS proyectado
+      const projIdx = i - N;
+      return ivPER[projIdx] / eps;  // = tPER siempre, útil como referencia
+    }
+  });
+  // ROIC = EBIT*(1-tax_rate) / (Equity + Debt) — aproximación: EBIT/EV
+  const roic = allEbit.map((v,i) => {
+    const evN = mktCap + allND[i];
+    return evN ? v/evN*100 : null;
+  });
+
+  const qualityRow = (label, vals, years, histN, isPct=false, dec=1, isGrowth=false, isPrice=false) => {
+    const cells = vals.map((v, i) => {
+      if (v === null || v === undefined || isNaN(v))
+        return `<td class="${i>=histN?'est-bg':''}">—</td>`;
+      const isEst = i >= histN;
+      let color = '';
+      if (isPct || isGrowth) color = v >= 0 ? '#4ade80' : '#f87171';
+      if (isPrice && isEst)  color = '#94a3b8';   // precio proyectado en gris (no aplica)
+      const txt = (isPct || isGrowth)
+        ? (v>=0?'+':'')+fm(v,dec)+'%'
+        : fm(v, dec);
+      return `<td class="${isEst?'est est-bg':''}" style="${color?'color:'+color+';font-weight:600':''}">${txt}</td>`;
+    }).join('');
+    return `<tr><td>${label}</td>${cells}</tr>`;
+  };
+
+  document.getElementById('content').innerHTML = `
+    <div class="s-header">
+      <div class="s-title">
+        <h2>${ticker} — ${d.name||ticker}</h2>
+        <div class="sub">${[d.sector,d.industry,d.exchange,currency].filter(Boolean).join(' · ')}</div>
+      </div>
+      <div class="price-card">
+        <div class="price">${fm(price,2)} ${currency}</div>
+        <div class="chg ${chg>=0?'pos':'neg-c'}">${chg>=0?'▲':'▼'} ${fm(Math.abs(chg),2)} (${fm(Math.abs(chgPct),2)}%)</div>
+      </div>
+    </div>
+
+    <div class="kpi-strip">
+      <div class="kpi"><div class="kl">Market Cap</div><div class="kv">${fmM(mktCap)}</div></div>
+      <div class="kpi"><div class="kl">EV</div><div class="kv">${fmM(ev)}</div></div>
+      <div class="kpi"><div class="kl">Net Debt</div><div class="kv" style="color:${curNetDebt<0?'#4ade80':'#f87171'}">${fmM(curNetDebt)}</div></div>
+      <div class="kpi"><div class="kl">PER LTM</div><div class="kv">${fmX(mPER)}</div></div>
+      <div class="kpi"><div class="kl">EV/EBITDA</div><div class="kv">${fmX(mEVEBITDA)}</div></div>
+      <div class="kpi"><div class="kl">EV/FCF</div><div class="kv">${fmX(mEVCF)}</div></div>
+      <div class="kpi"><div class="kl">EV/EBIT</div><div class="kv">${fmX(mEVEBIT)}</div></div>
+      <div class="kpi"><div class="kl">Beta</div><div class="kv">${fm(d.beta||0,2)}</div></div>
+      <div class="kpi"><div class="kl">Fwd PE</div><div class="kv">${fmX(d.fwd_pe)}</div></div>
+      <div class="kpi"><div class="kl">52W High</div><div class="kv">${fm(d.week52h||0,2)}</div></div>
+      <div class="kpi"><div class="kl">52W Low</div><div class="kv">${fm(d.week52l||0,2)}</div></div>
+      <div class="kpi"><div class="kl">Div. Yield</div><div class="kv">${d.div_yield?(d.div_yield*100).toFixed(2)+'%':'—'}</div></div>
+    </div>
+
+    <div class="verdict ${vClass}">
+      <div class="v-icon">${vIcon}</div>
+      <div class="v-text"><h3>${vLabel}</h3><p>${vDesc}</p></div>
+      <div class="v-right">
+        <div class="pct">${upside5>=0?'+':''}${fm(upside5,1)}%</div>
+        <div class="vlbl">Potencial estimado (5 años)</div>
+      </div>
+    </div>
+
+    <div class="sec-title">Estado de Resultados (millones ${currency})</div>
+    <div class="t-wrap"><table>
+      <thead><tr><th>Métrica</th>${thCols}</tr></thead>
+      <tbody>
+        ${metricRow('Revenue',     allRev)}
+        ${metricRow('EBITDA',      allEbitda)}
+        ${metricRow('EBIT',        allEbit)}
+        ${metricRow('Net Income',  allNI, 1e6, 0, true)}
+        ${metricRow('FCF',         allFCF)}
+        ${metricRow('EPS (USD)',   allEPS, 1, 2)}
+        ${metricRow('Net Debt',    allND)}
+      </tbody>
+    </table></div>
+
+    <!-- Valoración por Múltiplos -->
+    <div class="sec-title">Valoración por Múltiplos</div>
+    <div class="grid2">
+      <div class="box">
+        <h3>PER — Precio / EPS TTM</h3>
+        <div class="mrow"><span class="ml">EPS TTM</span><span class="mv">${fm(lastEPS,2)} ${currency}</span></div>
+        <div class="mrow"><span class="ml">PER actual</span>
+          <span style="color:${mPER>tPER?'#f87171':'#4ade80'};font-weight:700;font-size:1.1rem">${fmX(mPER)}</span>
+        </div>
+        <div class="mrow"><span class="ml">PER objetivo</span><span class="mt">${fm(tPER,1)}x</span></div>
+        <div class="mrow"><span class="ml">Precio justo (PER obj.)</span>
+          <span style="color:#4ade80;font-weight:700;font-size:1.1rem">${fm(lastEPS * tPER, 2)} ${currency}</span>
+        </div>
+        <div class="mrow"><span class="ml">Diferencia vs precio actual</span>
+          <span style="color:${(lastEPS*tPER)>=price?'#4ade80':'#f87171'};font-weight:700">
+            ${fm((lastEPS*tPER/price-1)*100,1)}%
+          </span>
+        </div>
+      </div>
+      <div class="box">
+        <h3>EV/FCF — Actual vs Objetivo</h3>
+        <div class="mrow"><span class="ml">FCF TTM</span><span class="mv">${fmM(lastFCF)}</span></div>
+        <div class="mrow"><span class="ml">EV actual</span><span class="mv">${fmM(ev)}</span></div>
+        <div class="mrow"><span class="ml">EV/FCF actual</span>
+          <span style="color:${mEVCF>tEVCF?'#f87171':'#4ade80'};font-weight:700;font-size:1.1rem">${fmX(mEVCF)}</span>
+        </div>
+        <div class="mrow"><span class="ml">EV/FCF objetivo</span><span class="mt">${fm(tEVCF,1)}x</span></div>
+        <div class="mrow"><span class="ml">Diferencia</span>
+          <span style="color:${mEVCF<=tEVCF?'#4ade80':'#f87171'};font-weight:700">
+            ${mEVCF&&tEVCF ? fm(mEVCF-tEVCF,1)+'x' : '—'}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Precio Objetivo Proyectado -->
+    <div class="sec-title">Precio Objetivo Proyectado (${currency} / acción)</div>
+    <div class="t-wrap"><table>
+      <thead><tr>
+        <th>Método</th>
+        ${projYears.map(y=>`<th class="est">${y}e</th>`).join('')}
+        <th style="color:#60a5fa">CAGR 5a</th>
+      </tr></thead>
+      <tbody>
+        ${ivRowHtml('PER × '+tPER,     ivPER)}
+        ${ivRowHtml('EV/FCF × '+tEVCF, ivEVCF)}
+        ${ivRowHtml('⭐ PROMEDIO PER+FCF', ivAvg, true)}
+        ${msRowHtml()}
+      </tbody>
+    </table></div>
+
+    <!-- DCF -->
+    <div class="grid2">
+      <div class="box">
+        <h3>DCF — Discounted Cash Flow</h3>
+        <div class="mrow"><span class="ml">WACC</span><span class="mv">${fm(wacc*100,1)}%</span></div>
+        <div class="mrow"><span class="ml">Terminal Growth</span><span class="mv">3.0%</span></div>
+        <div class="mrow"><span class="ml">FCF base (TTM)</span><span class="mv">${fmM(lastFCF)}</span></div>
+        <div class="mrow"><span class="ml">Valor Intrínseco DCF</span>
+          <span style="color:#4ade80;font-size:1.1rem;font-weight:700">${fm(dcfPrice,2)} ${currency}</span>
+        </div>
+        <div class="mrow"><span class="ml">Potencial DCF</span>
+          <span style="color:${dcfPrice>price?'#4ade80':'#f87171'};font-weight:700">
+            ${price?fm((dcfPrice/price-1)*100,1)+'%':'—'}
+          </span>
+        </div>
+      </div>
+      <div class="box">
+        <h3>Resumen</h3>
+        <div class="mrow"><span class="ml">Precio actual</span><span class="mv">${fm(price,2)} ${currency}</span></div>
+        <div class="mrow"><span class="ml">Precio justo PER</span><span class="mv">${fm(lastEPS*tPER,2)}</span></div>
+        <div class="mrow"><span class="ml">IV PER año 5</span><span class="mv">${fm(ivPER[4],2)}</span></div>
+        <div class="mrow"><span class="ml">IV EV/FCF año 5</span><span class="mv">${fm(ivEVCF[4],2)}</span></div>
+        <div class="mrow"><span class="ml">DCF</span><span class="mv">${fm(dcfPrice,2)}</span></div>
+      </div>
+    </div>
+
+    <!-- Métricas de Calidad año a año -->
+    <div class="sec-title">Métricas de Calidad — Evolución Histórica</div>
+    <div class="t-wrap"><table>
+      <thead><tr>
+        <th>Métrica</th>
+        ${allYears.map((y,i) => `<th class="${i>=N?'est':''}">${y}</th>`).join('')}
+      </tr></thead>
+      <tbody>
+        ${qualityRow('Revenue Y/Y %',  yoyGrowth(allRev), allYears, N, true)}
+        ${qualityRow('EBIT Margin %',  ebitMargin,        allYears, N, false)}
+        ${qualityRow('Net Margin %',   netMargin,         allYears, N, false)}
+        ${qualityRow('ROIC %',         roic,              allYears, N, false)}
+        <tr><td colspan="${1 + allYears.length}" style="padding:4px 11px;background:#111827;color:#4b5563;font-size:.72rem;letter-spacing:.5px;text-transform:uppercase">Precio · EPS · PER</td></tr>
+        ${qualityRow('Precio',         allHistPrice,      allYears, N, false, 2, false, true)}
+        ${qualityRow('EPS',            allEPS,            allYears, N, false, 2)}
+        ${qualityRow('EPS Y/Y %',      yoyGrowth(allEPS), allYears, N, true)}
+        ${qualityRow('PER',            perAll,            allYears, N, false, 1)}
+      </tbody>
+    </table></div>
+
+    <div class="chart-wrap">
+      <h3>Valor Intrínseco vs Precio Actual</h3>
+      <canvas id="ivChart" height="80"></canvas>
+    </div>
+  `;
+
+  document.getElementById('content').style.display = 'block';
+
+  if (chartInst) chartInst.destroy();
+  chartInst = new Chart(document.getElementById('ivChart').getContext('2d'), {
+    type: 'line',
+    data: {
+      labels: projYears.map(y=>y+'e'),
+      datasets: [
+        { label:'IV Promedio',   data:ivAvg.map(v=>+v.toFixed(2)),  borderColor:'#4ade80', backgroundColor:'rgba(74,222,128,.08)', borderWidth:2.5, pointRadius:5, pointBackgroundColor:'#4ade80', tension:.3, fill:true },
+        { label:'IV PER',        data:ivPER.map(v=>+v.toFixed(2)),  borderColor:'#60a5fa', borderWidth:1.5, pointRadius:3, tension:.3, borderDash:[4,3] },
+        { label:'IV EV/FCF',     data:ivEVCF.map(v=>+v.toFixed(2)), borderColor:'#a78bfa', borderWidth:1.5, pointRadius:3, tension:.3, borderDash:[4,3] },
+        { label:'Precio Actual', data:Array(PROJ).fill(+price.toFixed(2)), borderColor:'#fbbf24', borderWidth:2, pointRadius:0, borderDash:[6,4] },
+        { label:'DCF',           data:Array(PROJ).fill(+dcfPrice.toFixed(2)), borderColor:'#f87171', borderWidth:1.5, pointRadius:0, borderDash:[3,3] },
+      ]
+    },
+    options:{
+      responsive:true,
+      plugins:{
+        legend:{ labels:{ color:'#94a3b8', font:{size:11} } },
+        tooltip:{ callbacks:{ label: ctx => ctx.dataset.label+': '+ctx.parsed.y.toFixed(2)+' '+currency } }
+      },
+      scales:{
+        x:{ ticks:{color:'#94a3b8'}, grid:{color:'#1e2533'} },
+        y:{ ticks:{color:'#94a3b8'}, grid:{color:'#1e2533'} }
+      }
+    }
+  });
+}
+</script>
+</body>
+</html>
