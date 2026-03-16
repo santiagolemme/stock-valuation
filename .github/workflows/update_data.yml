@@ -1,41 +1,48 @@
 name: Update MAG7 Stock Data
 
 on:
-  # Corre todos los días de semana a las 8:00 AM Argentina (UTC-3 = 11:00 UTC)
   schedule:
     - cron: '0 11 * * 1-5'
-
-  # También permite correrlo manualmente desde GitHub
   workflow_dispatch:
 
 jobs:
   fetch-data:
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: write
+
     steps:
-      # 1. Bajar el código del repo
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. Instalar Python
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      # 3. Instalar dependencias
       - name: Install dependencies
         run: pip install yfinance pandas
 
-      # 4. Correr el script
       - name: Run MAG7 fetcher
-        run: |
-          echo "Archivos en el directorio:"
-          ls -la
-          python mag7_fetch.py
+        run: python mag7_fetch.py
 
-      # 5. Commitear el JSON generado al repo
-      - name: Commit and push JSON
+      - name: Generate data index
+        run: |
+          python - <<'EOF'
+          import os, json, re
+          data_dir = "data"
+          files = sorted([
+            f for f in os.listdir(data_dir)
+            if re.match(r"magnificent7_\d{8}\.json", f)
+          ], reverse=True)
+          dates = [re.search(r"(\d{8})", f).group(1) for f in files]
+          with open(os.path.join(data_dir, "index.json"), "w") as fp:
+            json.dump({"dates": dates, "latest": dates[0] if dates else None}, fp)
+          print(f"index.json generado con {len(dates)} fechas: {dates}")
+          EOF
+
+      - name: Commit and push
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
