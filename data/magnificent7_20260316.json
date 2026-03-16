@@ -6,12 +6,12 @@
     "industry": "Consumer Electronics",
     "currency": "USD",
     "exchange": "NMS",
-    "price": 252.9565,
+    "price": 252.725,
     "prev_close": 250.12,
-    "mkt_cap": 3717935661056.0,
+    "mkt_cap": 3714533294080.0,
     "shares": 14681140000.0,
     "beta": 1.116,
-    "fwd_pe": 27.211708,
+    "fwd_pe": 27.186806,
     "div_yield": 0.42,
     "week52h": 288.62,
     "week52l": 169.21,
@@ -85,7 +85,7 @@
         "cash": 45317000000.0
       }
     ],
-    "fetched_at": "2026-03-16T18:44:57.760907"
+    "fetched_at": "2026-03-16T18:58:46.605749"
   },
   "MSFT": {
     "ticker": "MSFT",
@@ -94,12 +94,12 @@
     "industry": "Software - Infrastructure",
     "currency": "USD",
     "exchange": "NMS",
-    "price": 400.445,
+    "price": 400.09,
     "prev_close": 395.55,
-    "mkt_cap": 2976258719744.0,
+    "mkt_cap": 2973619978240.0,
     "shares": 7425629076.0,
     "beta": 1.108,
-    "fwd_pe": 21.25052,
+    "fwd_pe": 21.231682,
     "div_yield": 0.92,
     "week52h": 555.45,
     "week52l": 344.79,
@@ -173,7 +173,7 @@
         "cash": 24296000000.0
       }
     ],
-    "fetched_at": "2026-03-16T18:45:00.230263"
+    "fetched_at": "2026-03-16T18:58:48.542252"
   },
   "GOOGL": {
     "ticker": "GOOGL",
@@ -182,12 +182,12 @@
     "industry": "Internet Content & Information",
     "currency": "USD",
     "exchange": "NMS",
-    "price": 305.4893,
+    "price": 305.7307,
     "prev_close": 302.28,
-    "mkt_cap": 3695503998976.0,
+    "mkt_cap": 3698424545280.0,
     "shares": 5822000000.0,
     "beta": 1.112,
-    "fwd_pe": 22.778364,
+    "fwd_pe": 22.796366,
     "div_yield": 0.28,
     "week52h": 349.0,
     "week52l": 140.53,
@@ -261,7 +261,7 @@
         "cash": 30708000000.0
       }
     ],
-    "fetched_at": "2026-03-16T18:45:02.495566"
+    "fetched_at": "2026-03-16T18:58:50.522891"
   },
   "AMZN": {
     "ticker": "AMZN",
@@ -270,12 +270,12 @@
     "industry": "Internet Retail",
     "currency": "USD",
     "exchange": "NMS",
-    "price": 211.74,
+    "price": 211.605,
     "prev_close": 207.67,
-    "mkt_cap": 2273012088832.0,
+    "mkt_cap": 2271562956800.0,
     "shares": 10734920870.0,
     "beta": 1.42,
-    "fwd_pe": 22.665747,
+    "fwd_pe": 22.651295,
     "div_yield": 0.0,
     "week52h": 258.6,
     "week52l": 161.38,
@@ -349,7 +349,7 @@
         "cash": 86810000000.0
       }
     ],
-    "fetched_at": "2026-03-16T18:45:04.711708"
+    "fetched_at": "2026-03-16T18:58:52.452236"
   },
   "NVDA": {
     "ticker": "NVDA",
@@ -358,12 +358,12 @@
     "industry": "Semiconductors",
     "currency": "USD",
     "exchange": "NMS",
-    "price": 184.4599,
+    "price": 183.87,
     "prev_close": 180.25,
-    "mkt_cap": 4483297837056.0,
+    "mkt_cap": 4468960133120.0,
     "shares": 24300000000.0,
     "beta": 2.375,
-    "fwd_pe": 17.085615,
+    "fwd_pe": 17.030975,
     "div_yield": 0.02,
     "week52h": 212.19,
     "week52l": 86.62,
@@ -437,7 +437,7 @@
         "cash": 10605000000.0
       }
     ],
-    "fetched_at": "2026-03-16T18:45:07.038020"
+    "fetched_at": "2026-03-16T18:58:54.385307"
   },
   "META": {
     "ticker": "META",
@@ -446,12 +446,12 @@
     "industry": "Internet Content & Information",
     "currency": "USD",
     "exchange": "NMS",
-    "price": 627.45,
+    "price": 627.6499,
     "prev_close": 613.185,
-    "mkt_cap": 1587169591296.0,
+    "mkt_cap": 1587675267072.0,
     "shares": 2187177748.0,
     "beta": 1.279,
-    "fwd_pe": 17.487457,
+    "fwd_pe": 17.493029,
     "div_yield": 0.34,
     "week52h": 796.25,
     "week52l": 479.8,
@@ -525,7 +525,7 @@
         "cash": 35873000000.0
       }
     ],
-    "fetched_at": "2026-03-16T18:45:09.220567"
+    "fetched_at": "2026-03-16T18:58:56.123620"
   },
   "TSLA": {
     "ticker": "TSLA",
@@ -534,12 +534,12 @@
     "industry": "Auto Manufacturers",
     "currency": "USD",
     "exchange": "NMS",
-    "price": 397.335,
+    "price": 397.11,
     "prev_close": 391.2,
-    "mkt_cap": 1490972442624.0,
+    "mkt_cap": 1490128207872.0,
     "shares": 3752431984.0,
     "beta": 1.926,
-    "fwd_pe": 141.37872,
+    "fwd_pe": 141.29866,
     "div_yield": 0.0,
     "week52h": 498.83,
     "week52l": 214.25,
@@ -613,6 +613,6 @@
         "cash": 16513000000.0
       }
     ],
-    "fetched_at": "2026-03-16T18:45:11.489422"
+    "fetched_at": "2026-03-16T18:58:58.272551"
   }
 }
