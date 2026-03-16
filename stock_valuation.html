@@ -7,22 +7,23 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Segoe UI',sans-serif;background:#0f1117;color:#e0e0e0;min-height:100vh}
-
 .header{background:linear-gradient(135deg,#1a1f2e,#252d3d);padding:16px 28px;border-bottom:2px solid #2d6a4f;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
 .header h1{font-size:1.35rem;color:#4ade80}
 .header p{font-size:.78rem;color:#94a3b8;margin-top:2px}
+.header-right{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .load-btn{padding:8px 16px;border-radius:7px;border:1px dashed #4ade80;background:transparent;color:#4ade80;cursor:pointer;font-size:.82rem;font-weight:600;transition:all .2s}
 .load-btn:hover{background:#4ade80;color:#000}
 #fileInput{display:none}
+#datePickerWrap{display:none;align-items:center;gap:8px}
+#datePickerWrap span{font-size:.8rem;color:#94a3b8}
+#dateSelect{padding:7px 12px;border-radius:7px;border:1px solid #2d3748;background:#1e2533;color:#fff;font-size:.85rem;outline:none;cursor:pointer}
 
-/* Ticker selector */
 .ticker-bar{padding:12px 28px;background:#141822;border-bottom:1px solid #1e2533;display:none;flex-wrap:wrap;gap:8px;align-items:center}
 .ticker-btn{padding:7px 16px;border-radius:20px;border:1px solid #2d3748;background:#1a1f2e;color:#94a3b8;cursor:pointer;font-size:.82rem;font-weight:600;transition:all .2s}
 .ticker-btn:hover{border-color:#4ade80;color:#4ade80}
 .ticker-btn.active{background:#2d6a4f;border-color:#4ade80;color:#fff}
 .last-update{font-size:.72rem;color:#4b5563;margin-left:auto}
 
-/* Parameters */
 .params-bar{padding:10px 28px;background:#0f1117;border-bottom:1px solid #1e2533;display:none;flex-wrap:wrap;gap:10px;align-items:flex-end}
 .tgroup{display:flex;flex-direction:column;gap:3px}
 .tlabel{font-size:.72rem;color:#94a3b8;white-space:nowrap}
@@ -33,13 +34,18 @@ input[type=number]:focus{border-color:#4ade80}
 .btn-primary:hover{background:#4ade80;color:#000}
 .sep{width:1px;height:32px;background:#2d3748;margin:0 4px;align-self:center}
 
-/* Empty */
 .empty-state{text-align:center;padding:80px 20px;color:#4b5563}
 .empty-state .icon{font-size:3.5rem;margin-bottom:16px}
 .empty-state p{font-size:.92rem;margin-top:6px}
 .empty-state code{background:#1a1f2e;padding:2px 8px;border-radius:4px;color:#4ade80;font-size:.85rem}
 
-/* Content */
+.loading{display:none;text-align:center;padding:70px 20px}
+.spinner{width:44px;height:44px;border:3px solid #1e2533;border-top-color:#4ade80;border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 14px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.status-txt{color:#94a3b8;font-size:.88rem;margin-top:6px}
+
+.error-box{display:none;margin:20px 28px;padding:14px 18px;background:#3b1a1a;border:1px solid #7f1d1d;border-radius:8px;color:#fca5a5;font-size:.88rem}
+
 .content{display:none;padding:20px 28px}
 
 .s-header{display:flex;flex-wrap:wrap;gap:16px;margin-bottom:18px;align-items:flex-start}
@@ -110,16 +116,13 @@ tbody td:first-child{text-align:left;color:#94a3b8}
     <h1>📈 Stock Valuation Tool — Mag7</h1>
     <p>Datos desde yfinance · Sin dependencia de APIs externas</p>
   </div>
-  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-    <!-- Selector de fecha (GitHub Pages) -->
-    <div id="datePickerWrap" style="display:none;align-items:center;gap:8px">
-      <span style="font-size:.8rem;color:#94a3b8">Versión:</span>
-      <select id="dateSelect" onchange="onDateChange()"
-        style="padding:7px 12px;border-radius:7px;border:1px solid #2d3748;background:#1e2533;color:#fff;font-size:.85rem;outline:none;cursor:pointer">
-        <option value="">Seleccioná una fecha…</option>
+  <div class="header-right">
+    <div id="datePickerWrap">
+      <span>Versión:</span>
+      <select id="dateSelect" onchange="onDateChange()">
+        <option value="">Seleccioná una fecha...</option>
       </select>
     </div>
-    <!-- File picker (local) -->
     <button id="filePickerBtn" class="load-btn" onclick="document.getElementById('fileInput').click()">📂 Cargar JSON</button>
     <input type="file" id="fileInput" accept=".json" onchange="loadFile(event)">
   </div>
@@ -138,83 +141,107 @@ tbody td:first-child{text-align:left;color:#94a3b8}
   <button class="btn btn-primary" onclick="recalc()">⟳ Recalcular</button>
 </div>
 
+<div class="error-box" id="errBox"></div>
+<div class="loading" id="loading"><div class="spinner"></div><div class="status-txt" id="statusTxt">Cargando...</div></div>
 <div class="empty-state" id="emptyState">
   <div class="icon">📂</div>
   <p>Primero corré el script Python en Jupyter para generar el archivo de datos:</p>
   <p style="margin-top:12px"><code>magnificent7.json</code></p>
   <p style="margin-top:12px;font-size:.8rem">Luego hacé clic en <strong style="color:#4ade80">Cargar JSON</strong> para comenzar el análisis.</p>
 </div>
-
 <div class="content" id="content"></div>
 <div class="note">⚠️ Las proyecciones son estimaciones. No constituye asesoramiento financiero.</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script>
-// ── Configuración GitHub Pages ─────────────────────────────────────────────
-// Reemplazá USERNAME y REPONAME con los tuyos
+// ── Config ────────────────────────────────────────────────────────────────
 const GITHUB_USER = 'santiagolemme';
 const GITHUB_REPO = 'stock-valuation';
 const DATA_BASE   = `https://${GITHUB_USER}.github.io/${GITHUB_REPO}/data`;
 const IS_GITHUB   = window.location.hostname.includes('github.io');
 
-let DB = {};
-let currentTicker = null;
-let chartInst = null;
+let DB = {}, currentTicker = null, chartInst = null;
 
-// ── Cargar desde GitHub Pages ──────────────────────────────────────────────
-async function loadFromGitHub(date) {
-  const url = `${DATA_BASE}/magnificent7_${date}.json`;
-  const r   = await fetch(url);
-  if (!r.ok) throw new Error(`No se pudo cargar el archivo para ${date}`);
-  return r.json();
-}
+// ── Init ──────────────────────────────────────────────────────────────────
+window.addEventListener('load', async () => {
+  showEl('emptyState');
+  hideEl('loading');
+  hideEl('content');
 
-async function loadIndex() {
-  const r = await fetch(`${DATA_BASE}/index.json`);
-  if (!r.ok) throw new Error('No se encontró index.json — corré el workflow primero.');
-  return r.json();
-}
+  if (IS_GITHUB) {
+    showEl('loading');
+    hideEl('emptyState');
+    setStatus('Cargando índice de datos...');
+    try {
+      const idx = await fetch(`${DATA_BASE}/index.json`).then(r => r.json());
+
+      // Poblar selector
+      const sel = document.getElementById('dateSelect');
+      idx.dates.forEach(d => {
+        const o = document.createElement('option');
+        o.value = d; o.textContent = formatDate(d);
+        sel.appendChild(o);
+      });
+
+      // Mostrar date picker, ocultar file picker
+      document.getElementById('datePickerWrap').style.display = 'flex';
+      document.getElementById('filePickerBtn').style.display  = 'none';
+
+      // Auto-cargar el más reciente
+      if (idx.latest) {
+        sel.value = idx.latest;
+        await loadAndRender(idx.latest);
+      }
+    } catch(e) {
+      hideEl('loading');
+      showEl('emptyState');
+      showError('No se pudo cargar el índice: ' + e.message);
+    }
+  } else {
+    hideEl('loading');
+    showEl('emptyState');
+  }
+});
 
 async function onDateChange() {
   const date = document.getElementById('dateSelect').value;
   if (!date) return;
+  await loadAndRender(date);
+}
+
+async function loadAndRender(date) {
+  showEl('loading');
+  hideEl('content');
+  hideEl('emptyState');
+  setStatus(`Cargando datos del ${formatDate(date)}...`);
   try {
-    setUI('loading');
-    setStatus(`Cargando datos del ${formatDate(date)}…`);
-    DB = await loadFromGitHub(date);
+    const url = `${DATA_BASE}/magnificent7_${date}.json`;
+    const r   = await fetch(url);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    DB = await r.json();
     initUI();
   } catch(e) {
-    showError(e.message);
-    setUI('empty');
+    showError('Error al cargar: ' + e.message);
+    hideEl('loading');
+    showEl('emptyState');
   }
 }
 
-function formatDate(d) {
-  // "20250316" → "16/03/2025"
-  return `${d.slice(6,8)}/${d.slice(4,6)}/${d.slice(0,4)}`;
-}
-
-// ── Cargar archivo local (fallback) ───────────────────────────────────────
 function loadFile(evt) {
   const file = evt.target.files[0];
   if (!file) return;
   const reader = new FileReader();
   reader.onload = e => {
-    try {
-      DB = JSON.parse(e.target.result);
-      initUI();
-    } catch(err) {
-      alert('Error al leer el JSON: ' + err.message);
-    }
+    try { DB = JSON.parse(e.target.result); initUI(); }
+    catch(err) { alert('Error al leer el JSON: ' + err.message); }
   };
   reader.readAsText(file);
 }
 
 function initUI() {
   const tickers = Object.keys(DB);
-  if (!tickers.length) return alert('El JSON está vacío.');
+  if (!tickers.length) { showError('El JSON está vacío.'); return; }
 
-  // Ticker bar
   const bar = document.getElementById('tickerBar');
   const firstFetched = DB[tickers[0]]?.fetched_at;
   bar.innerHTML = tickers.map(t =>
@@ -224,8 +251,8 @@ function initUI() {
 
   bar.style.display = 'flex';
   document.getElementById('paramsBar').style.display = 'flex';
-  document.getElementById('emptyState').style.display = 'none';
-
+  hideEl('emptyState');
+  hideEl('loading');
   selectTicker(tickers[0]);
 }
 
@@ -237,20 +264,17 @@ function selectTicker(ticker) {
   render(ticker);
 }
 
-function recalc() {
-  if (currentTicker) render(currentTicker);
-}
+function recalc() { if (currentTicker) render(currentTicker); }
 
-// ── Render ─────────────────────────────────────────────────────────────────
+// ── Render ────────────────────────────────────────────────────────────────
 function render(ticker) {
   const d = DB[ticker];
   if (!d) return;
 
-  const hist   = d.historical || [];
-  const N      = hist.length;
+  const hist = d.historical || [];
+  const N    = hist.length;
   if (!N) { alert('Sin datos históricos para ' + ticker); return; }
 
-  // ── Precio & perfil ──
   const price    = d.price     || 0;
   const prev     = d.prev_close|| price;
   const chg      = price - prev;
@@ -259,15 +283,14 @@ function render(ticker) {
   const shares   = d.shares    || 1;
   const currency = d.currency  || 'USD';
 
-  // ── Histórico ──
   const histYears = hist.map(r => r.year);
-  const hRev    = hist.map(r => r.revenue   || 0);
-  const hEbitda = hist.map(r => r.ebitda    || 0);
-  const hEbit   = hist.map(r => r.ebit      || 0);
-  const hNI     = hist.map(r => r.net_income|| 0);
-  const hFCF    = hist.map(r => r.fcf       || 0);
-  const hEPS    = hist.map(r => r.eps       || 0);
-  const hND     = hist.map(r => r.net_debt  || 0);
+  const hRev    = hist.map(r => r.revenue    || 0);
+  const hEbitda = hist.map(r => r.ebitda     || 0);
+  const hEbit   = hist.map(r => r.ebit       || 0);
+  const hNI     = hist.map(r => r.net_income || 0);
+  const hFCF    = hist.map(r => r.fcf        || 0);
+  const hEPS    = hist.map(r => r.eps        || 0);
+  const hND     = hist.map(r => r.net_debt   || 0);
 
   const lastRev    = hRev[N-1],    lastEbitda = hEbitda[N-1];
   const lastEbit   = hEbit[N-1],   lastNI     = hNI[N-1];
@@ -275,13 +298,11 @@ function render(ticker) {
   const curNetDebt = hND[N-1];
   const ev         = mktCap + curNetDebt;
 
-  // ── Múltiplos LTM ──
   const mPER      = lastNI     ? mktCap / lastNI     : 0;
   const mEVCF     = lastFCF    ? ev     / lastFCF    : 0;
   const mEVEBITDA = lastEbitda ? ev     / lastEbitda : 0;
   const mEVEBIT   = lastEbit   ? ev     / lastEbit   : 0;
 
-  // ── Parámetros ──
   const tPER      = +document.getElementById('t_per').value      || 20;
   const tEVCF     = +document.getElementById('t_evcf').value     || 20;
   const tEVEBITDA = +document.getElementById('t_evebitda').value || 11;
@@ -291,11 +312,11 @@ function render(ticker) {
   const termG     = 0.03;
   const PROJ      = 5;
 
-  // ── Proyecciones ──
-  // El último año puede ser "TTM (2025-12)" → extraer el número
+  // Año base desde TTM label o año numérico
   const lastYearRaw = histYears[N-1];
-  const lastYear    = parseInt(lastYearRaw.toString().match(/\d{4}/)?.[0] || lastYearRaw);
+  const lastYear    = parseInt(String(lastYearRaw).match(/\d{4}/)?.[0] || lastYearRaw);
   const projYears   = Array.from({length:PROJ}, (_,i) => lastYear + i + 1);
+
   const proj = base => Array.from({length:PROJ}, (_,i) => base * (1+growth)**(i+1));
   const pRev    = proj(lastRev);
   const pEbitda = proj(lastEbitda);
@@ -304,29 +325,25 @@ function render(ticker) {
   const pFCF    = proj(lastFCF);
   const pEPS    = proj(lastEPS);
 
-  // ── Valor Intrínseco — solo PER y EV/FCF ──
-  const sh = shares || 1;
-  const ivPER  = pNI.map(v  => (v * tPER) / sh);
-  const ivEVCF = pFCF.map(v => (v * tEVCF - curNetDebt) / sh);
+  const sh     = shares || 1;
+  const ivPER  = pNI.map(v    => (v * tPER) / sh);
+  const ivEVCF = pFCF.map(v   => (v * tEVCF   - curNetDebt) / sh);
+  const ivEBDA = pEbitda.map(v => (v * tEVEBITDA - curNetDebt) / sh);
+  const ivEBIT = pEbit.map(v  => (v * tEVEBIT   - curNetDebt) / sh);
   const ivAvg  = ivPER.map((_,i) => (ivPER[i] + ivEVCF[i]) / 2);
 
-  // ── DCF ──
   const pvFCF    = pFCF.reduce((s,v,i) => s + v/(1+wacc)**(i+1), 0);
   const terminal = pFCF[PROJ-1] * (1+termG) / (wacc - termG);
   const dcfPrice = (pvFCF + terminal/(1+wacc)**PROJ - curNetDebt) / sh;
 
-  // ── Veredicto ──
   const upside5 = price ? (ivAvg[4]/price - 1)*100 : 0;
   const vClass  = upside5 > 20 ? 'buy' : upside5 < -15 ? 'sell' : 'hold';
   const vIcon   = upside5 > 20 ? '🟢' : upside5 < -15 ? '🔴' : '⏸️';
   const vLabel  = upside5 > 20 ? 'COMPRA' : upside5 < -15 ? 'CARA / VENTA' : 'MANTENER';
-  const vDesc   = upside5 > 20
-    ? 'Cotiza con descuento significativo vs su valor intrínseco estimado.'
-    : upside5 < -15
-    ? 'Podría estar sobrevaluada respecto a su valor intrínseco estimado.'
+  const vDesc   = upside5 > 20 ? 'Cotiza con descuento significativo vs su valor intrínseco estimado.'
+    : upside5 < -15 ? 'Podría estar sobrevaluada respecto a su valor intrínseco estimado.'
     : 'Cotiza cerca de su valor intrínseco estimado.';
 
-  // ── Helpers ──
   const fm  = (v,dec=0) => (v==null||isNaN(v)) ? '—' : v.toLocaleString('es-AR',{minimumFractionDigits:dec,maximumFractionDigits:dec});
   const fmM = v => {
     if (!v||isNaN(v)) return '—';
@@ -346,8 +363,29 @@ function render(ticker) {
   const allEPS    = [...hEPS,    ...pEPS];
   const allND     = [...hND,     ...Array(PROJ).fill(curNetDebt)];
 
-  const thCols = allYears.map((y,i) =>
-    `<th class="${i>=N?'est':''}">${y}</th>`).join('');
+  // Métricas de calidad
+  const yoyGrowth = arr => arr.map((v,i) => i===0||!arr[i-1]||arr[i-1]===0 ? null : (v/arr[i-1]-1)*100);
+  const ebitMargin = allRev.map((v,i) => v ? allEbit[i]/v*100   : null);
+  const netMargin  = allRev.map((v,i) => v ? allNI[i]/v*100     : null);
+  const roic       = allEbit.map((v,i) => { const evN=mktCap+allND[i]; return evN?v/evN*100:null; });
+
+  // Precio histórico + TTM actual
+  const allHistPrice = [
+    ...hist.map(r => r.hist_price || null),
+    ...Array(PROJ).fill(null)
+  ];
+  allHistPrice[N-1] = price;
+
+  // PER: histórico, TTM, proyectado
+  const perAll = allYears.map((y,i) => {
+    const eps = allEPS[i];
+    if (!eps) return null;
+    if (i < N) { const p = allHistPrice[i]; return p ? p/eps : null; }
+    const projIdx = i - N;
+    return ivPER[projIdx] / eps;
+  });
+
+  const thCols = allYears.map((y,i) => `<th class="${i>=N?'est':''}">${y}</th>`).join('');
 
   const metricRow = (lbl, vals, div=1e6, dec=0, hl=false) =>
     `<tr class="${hl?'hl':''}"><td>${lbl}</td>${
@@ -378,68 +416,17 @@ function render(ticker) {
     </div>`;
   };
 
-  const cagrRow = (lbl,arr) => {
-    const c=price&&arr[4]?((arr[4]/price)**(1/5)-1)*100:0;
-    const col=c>15?'#4ade80':c>8?'#fbbf24':'#f87171';
-    return `<div class="mrow"><span class="ml">${lbl}</span><span style="color:${col};font-weight:700">${fm(c,0)}%</span></div>`;
-  };
-
-  // ── Métricas de calidad ──
-  // Y/Y growth helper
-  const yoyGrowth = arr => arr.map((v,i) => {
-    if (i===0 || !arr[i-1]) return null;
-    return arr[i-1]!==0 ? (v/arr[i-1]-1)*100 : null;
-  });
-
-  // EBIT Margin = EBIT / Revenue
-  const ebitMargin = allRev.map((v,i) => v ? allEbit[i]/v*100 : null);
-  // Net Margin = NI / Revenue
-  const netMargin  = allRev.map((v,i) => v ? allNI[i]/v*100   : null);
-  // Precios históricos (del JSON)
-  const allHistPrice = [
-    ...hist.map(r => r.hist_price || null),   // histórico + TTM = precio actual
-    ...Array(PROJ).fill(null)                  // proyectado: no aplica precio
-  ];
-  // Reemplazar el último (TTM) con precio actual
-  allHistPrice[N - 1] = price;
-
-  // PER:
-  //   Histórico:  hist_price / EPS anual
-  //   TTM:        precio actual / EPS TTM
-  //   Proyectado: precio objetivo PER (ivPER[i]) / EPS proyectado
-  const perAll = allYears.map((y, i) => {
-    const eps = allEPS[i];
-    if (!eps) return null;
-    if (i < N) {
-      // histórico + TTM
-      const p = allHistPrice[i];
-      return p ? p / eps : null;
-    } else {
-      // proyectado: precio objetivo PER / EPS proyectado
-      const projIdx = i - N;
-      return ivPER[projIdx] / eps;  // = tPER siempre, útil como referencia
-    }
-  });
-  // ROIC = EBIT*(1-tax_rate) / (Equity + Debt) — aproximación: EBIT/EV
-  const roic = allEbit.map((v,i) => {
-    const evN = mktCap + allND[i];
-    return evN ? v/evN*100 : null;
-  });
-
-  const qualityRow = (label, vals, years, histN, isPct=false, dec=1, isGrowth=false, isPrice=false) => {
-    const cells = vals.map((v, i) => {
-      if (v === null || v === undefined || isNaN(v))
-        return `<td class="${i>=histN?'est-bg':''}">—</td>`;
-      const isEst = i >= histN;
+  const qualityRow = (lbl, vals, isPct=false, dec=1, isPrice=false) => {
+    const cells = vals.map((v,i) => {
+      if (v===null||v===undefined||isNaN(v)) return `<td class="${i>=N?'est-bg':''}">—</td>`;
+      const isEst = i >= N;
       let color = '';
-      if (isPct || isGrowth) color = v >= 0 ? '#4ade80' : '#f87171';
-      if (isPrice && isEst)  color = '#94a3b8';   // precio proyectado en gris (no aplica)
-      const txt = (isPct || isGrowth)
-        ? (v>=0?'+':'')+fm(v,dec)+'%'
-        : fm(v, dec);
+      if (isPct) color = v>=0?'#4ade80':'#f87171';
+      if (isPrice && isEst) color = '#4b5563';
+      const txt = isPct ? (v>=0?'+':'')+fm(v,dec)+'%' : fm(v,dec);
       return `<td class="${isEst?'est est-bg':''}" style="${color?'color:'+color+';font-weight:600':''}">${txt}</td>`;
     }).join('');
-    return `<tr><td>${label}</td>${cells}</tr>`;
+    return `<tr><td>${lbl}</td>${cells}</tr>`;
   };
 
   document.getElementById('content').innerHTML = `
@@ -482,17 +469,16 @@ function render(ticker) {
     <div class="t-wrap"><table>
       <thead><tr><th>Métrica</th>${thCols}</tr></thead>
       <tbody>
-        ${metricRow('Revenue',     allRev)}
-        ${metricRow('EBITDA',      allEbitda)}
-        ${metricRow('EBIT',        allEbit)}
-        ${metricRow('Net Income',  allNI, 1e6, 0, true)}
-        ${metricRow('FCF',         allFCF)}
-        ${metricRow('EPS (USD)',   allEPS, 1, 2)}
-        ${metricRow('Net Debt',    allND)}
+        ${metricRow('Revenue',    allRev)}
+        ${metricRow('EBITDA',     allEbitda)}
+        ${metricRow('EBIT',       allEbit)}
+        ${metricRow('Net Income', allNI, 1e6, 0, true)}
+        ${metricRow('FCF',        allFCF)}
+        ${metricRow('EPS (USD)',  allEPS, 1, 2)}
+        ${metricRow('Net Debt',   allND)}
       </tbody>
     </table></div>
 
-    <!-- Valoración por Múltiplos -->
     <div class="sec-title">Valoración por Múltiplos</div>
     <div class="grid2">
       <div class="box">
@@ -503,7 +489,7 @@ function render(ticker) {
         </div>
         <div class="mrow"><span class="ml">PER objetivo</span><span class="mt">${fm(tPER,1)}x</span></div>
         <div class="mrow"><span class="ml">Precio justo (PER obj.)</span>
-          <span style="color:#4ade80;font-weight:700;font-size:1.1rem">${fm(lastEPS * tPER, 2)} ${currency}</span>
+          <span style="color:#4ade80;font-weight:700;font-size:1.1rem">${fm(lastEPS*tPER,2)} ${currency}</span>
         </div>
         <div class="mrow"><span class="ml">Diferencia vs precio actual</span>
           <span style="color:${(lastEPS*tPER)>=price?'#4ade80':'#f87171'};font-weight:700">
@@ -521,13 +507,12 @@ function render(ticker) {
         <div class="mrow"><span class="ml">EV/FCF objetivo</span><span class="mt">${fm(tEVCF,1)}x</span></div>
         <div class="mrow"><span class="ml">Diferencia</span>
           <span style="color:${mEVCF<=tEVCF?'#4ade80':'#f87171'};font-weight:700">
-            ${mEVCF&&tEVCF ? fm(mEVCF-tEVCF,1)+'x' : '—'}
+            ${mEVCF&&tEVCF?fm(mEVCF-tEVCF,1)+'x':'—'}
           </span>
         </div>
       </div>
     </div>
 
-    <!-- Precio Objetivo Proyectado -->
     <div class="sec-title">Precio Objetivo Proyectado (${currency} / acción)</div>
     <div class="t-wrap"><table>
       <thead><tr>
@@ -543,7 +528,6 @@ function render(ticker) {
       </tbody>
     </table></div>
 
-    <!-- DCF -->
     <div class="grid2">
       <div class="box">
         <h3>DCF — Discounted Cash Flow</h3>
@@ -569,23 +553,19 @@ function render(ticker) {
       </div>
     </div>
 
-    <!-- Métricas de Calidad año a año -->
     <div class="sec-title">Métricas de Calidad — Evolución Histórica</div>
     <div class="t-wrap"><table>
-      <thead><tr>
-        <th>Métrica</th>
-        ${allYears.map((y,i) => `<th class="${i>=N?'est':''}">${y}</th>`).join('')}
-      </tr></thead>
+      <thead><tr><th>Métrica</th>${thCols}</tr></thead>
       <tbody>
-        ${qualityRow('Revenue Y/Y %',  yoyGrowth(allRev), allYears, N, true)}
-        ${qualityRow('EBIT Margin %',  ebitMargin,        allYears, N, false)}
-        ${qualityRow('Net Margin %',   netMargin,         allYears, N, false)}
-        ${qualityRow('ROIC %',         roic,              allYears, N, false)}
-        <tr><td colspan="${1 + allYears.length}" style="padding:4px 11px;background:#111827;color:#4b5563;font-size:.72rem;letter-spacing:.5px;text-transform:uppercase">Precio · EPS · PER</td></tr>
-        ${qualityRow('Precio',         allHistPrice,      allYears, N, false, 2, false, true)}
-        ${qualityRow('EPS',            allEPS,            allYears, N, false, 2)}
-        ${qualityRow('EPS Y/Y %',      yoyGrowth(allEPS), allYears, N, true)}
-        ${qualityRow('PER',            perAll,            allYears, N, false, 1)}
+        ${qualityRow('Revenue Y/Y %',  yoyGrowth(allRev),    true)}
+        ${qualityRow('EBIT Margin %',  ebitMargin,           false)}
+        ${qualityRow('Net Margin %',   netMargin,            false)}
+        ${qualityRow('ROIC %',         roic,                 false)}
+        <tr><td colspan="${1+allYears.length}" style="padding:4px 11px;background:#111827;color:#4b5563;font-size:.72rem;letter-spacing:.5px;text-transform:uppercase">Precio · EPS · PER</td></tr>
+        ${qualityRow('Precio',         allHistPrice,         false, 2, true)}
+        ${qualityRow('EPS',            allEPS,               false, 2)}
+        ${qualityRow('EPS Y/Y %',      yoyGrowth(allEPS),    true)}
+        ${qualityRow('PER',            perAll,               false, 1)}
       </tbody>
     </table></div>
 
@@ -595,7 +575,7 @@ function render(ticker) {
     </div>
   `;
 
-  document.getElementById('content').style.display = 'block';
+  showEl('content');
 
   if (chartInst) chartInst.destroy();
   chartInst = new Chart(document.getElementById('ivChart').getContext('2d'), {
@@ -622,6 +602,23 @@ function render(ticker) {
       }
     }
   });
+}
+
+// ── UI helpers ────────────────────────────────────────────────────────────
+function showEl(id) { document.getElementById(id).style.display = 'block'; }
+function hideEl(id) { document.getElementById(id).style.display = 'none';  }
+function setUI(state) {
+  ['loading','emptyState','content'].forEach(id => hideEl(id));
+  if (state) showEl(state);
+}
+function setStatus(t) { document.getElementById('statusTxt').textContent = t; }
+function showError(msg) {
+  const b = document.getElementById('errBox');
+  b.textContent = '❌ ' + msg;
+  b.style.display = 'block';
+}
+function formatDate(d) {
+  return `${d.slice(6,8)}/${d.slice(4,6)}/${d.slice(0,4)}`;
 }
 </script>
 </body>
