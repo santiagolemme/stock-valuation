@@ -29,7 +29,10 @@ jobs:
 
       # 4. Correr el script
       - name: Run MAG7 fetcher
-        run: python mag7_fetch.py
+        run: |
+          echo "Archivos en el directorio:"
+          ls -la
+          python mag7_fetch.py
 
       # 5. Commitear el JSON generado al repo
       - name: Commit and push JSON
