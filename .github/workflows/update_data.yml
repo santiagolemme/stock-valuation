@@ -1,0 +1,41 @@
+name: Update MAG7 Stock Data
+
+on:
+  # Corre todos los días de semana a las 8:00 AM Argentina (UTC-3 = 11:00 UTC)
+  schedule:
+    - cron: '0 11 * * 1-5'
+
+  # También permite correrlo manualmente desde GitHub
+  workflow_dispatch:
+
+jobs:
+  fetch-data:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Bajar el código del repo
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Instalar Python
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # 3. Instalar dependencias
+      - name: Install dependencies
+        run: pip install yfinance pandas
+
+      # 4. Correr el script
+      - name: Run MAG7 fetcher
+        run: python mag7_fetch.py
+
+      # 5. Commitear el JSON generado al repo
+      - name: Commit and push JSON
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/
+          git diff --staged --quiet || git commit -m "data: update $(date +'%Y-%m-%d')"
+          git push
