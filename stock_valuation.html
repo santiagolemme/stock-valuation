@@ -22,6 +22,12 @@ body{font-family:'Segoe UI',sans-serif;background:#0f1117;color:#e0e0e0;min-heig
 .ticker-btn{padding:7px 16px;border-radius:20px;border:1px solid #2d3748;background:#1a1f2e;color:#94a3b8;cursor:pointer;font-size:.82rem;font-weight:600;transition:all .2s}
 .ticker-btn:hover{border-color:#4ade80;color:#4ade80}
 .ticker-btn.active{background:#2d6a4f;border-color:#4ade80;color:#fff}
+.mag7-btn{border-color:#2d6a4f;color:#4ade80}
+.mag7-btn.active{background:#2d6a4f;color:#fff}
+.wl-btn{border-color:#1e3a5f;color:#60a5fa}
+.wl-btn:hover{border-color:#60a5fa;color:#60a5fa}
+.wl-btn.active{background:#1e3a5f;border-color:#60a5fa;color:#fff}
+.wl-divider{width:1px;height:28px;background:#2d3748;margin:0 6px;align-self:center}
 .last-update{font-size:.72rem;color:#4b5563;margin-left:auto}
 
 .params-bar{padding:10px 28px;background:#0f1117;border-bottom:1px solid #1e2533;display:none;flex-wrap:wrap;gap:10px;align-items:flex-end}
@@ -66,18 +72,21 @@ input[type=number]:focus{border-color:#4ade80}
 .verdict.buy{background:linear-gradient(135deg,#052e16,#14532d);border:1px solid #166534}
 .verdict.hold{background:linear-gradient(135deg,#1c1a05,#3a350a);border:1px solid #713f12}
 .verdict.sell{background:linear-gradient(135deg,#1f0505,#450a0a);border:1px solid #7f1d1d}
+.verdict.watch{background:linear-gradient(135deg,#0a1628,#0f2744);border:1px solid #1e40af}
 .v-icon{font-size:2rem}
 .v-text h3{font-size:1rem;font-weight:700}
 .verdict.buy .v-text h3{color:#4ade80}
 .verdict.hold .v-text h3{color:#fbbf24}
 .verdict.sell .v-text h3{color:#f87171}
+.verdict.watch .v-text h3{color:#60a5fa}
 .v-text p{font-size:.78rem;color:#94a3b8;margin-top:2px}
 .v-right{margin-left:auto;text-align:right}
-.v-right .pct{font-size:1.7rem;font-weight:700}
-.verdict.buy .v-right .pct{color:#4ade80}
-.verdict.hold .v-right .pct{color:#fbbf24}
-.verdict.sell .v-right .pct{color:#f87171}
-.v-right .vlbl{font-size:.7rem;color:#94a3b8}
+.scorecard{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.sc-item{padding:4px 10px;border-radius:20px;font-size:.75rem;font-weight:600}
+.sc-green{background:rgba(74,222,128,.15);color:#4ade80;border:1px solid #166534}
+.sc-red{background:rgba(248,113,113,.12);color:#f87171;border:1px solid #7f1d1d}
+.per-badges{display:flex;gap:8px;margin-top:6px;flex-wrap:wrap}
+.per-badge{padding:3px 10px;border-radius:20px;font-size:.73rem;font-weight:600}
 
 .sec-title{font-size:.75rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;border-left:3px solid #4ade80;padding-left:8px;margin-bottom:9px}
 .t-wrap{overflow-x:auto;margin-bottom:20px;border-radius:8px;border:1px solid #1e2533}
@@ -161,6 +170,7 @@ const DATA_BASE   = `https://${GITHUB_USER}.github.io/${GITHUB_REPO}/data`;
 const IS_GITHUB   = window.location.hostname.includes('github.io');
 
 let DB = {}, currentTicker = null, chartInst = null;
+let MAG7 = [], WATCHLIST = [];
 
 // ── Init ──────────────────────────────────────────────────────────────────
 window.addEventListener('load', async () => {
@@ -168,26 +178,34 @@ window.addEventListener('load', async () => {
   hideEl('loading');
   hideEl('content');
 
+  // Load watchlist config
+  try {
+    const wl = await fetch(IS_GITHUB
+      ? `https://${GITHUB_USER}.github.io/${GITHUB_REPO}/watchlist.json`
+      : 'watchlist.json'
+    ).then(r => r.json());
+    MAG7      = wl.mag7      || [];
+    WATCHLIST = wl.watchlist || [];
+  } catch(e) {
+    // fallback defaults
+    MAG7      = ["AAPL","MSFT","GOOGL","AMZN","NVDA","META","TSLA"];
+    WATCHLIST = [];
+  }
+
   if (IS_GITHUB) {
     showEl('loading');
     hideEl('emptyState');
     setStatus('Cargando índice de datos...');
     try {
       const idx = await fetch(`${DATA_BASE}/index.json`).then(r => r.json());
-
-      // Poblar selector
       const sel = document.getElementById('dateSelect');
       idx.dates.forEach(d => {
         const o = document.createElement('option');
         o.value = d; o.textContent = formatDate(d);
         sel.appendChild(o);
       });
-
-      // Mostrar date picker, ocultar file picker
       document.getElementById('datePickerWrap').style.display = 'flex';
       document.getElementById('filePickerBtn').style.display  = 'none';
-
-      // Auto-cargar el más reciente
       if (idx.latest) {
         sel.value = idx.latest;
         await loadAndRender(idx.latest);
@@ -239,21 +257,37 @@ function loadFile(evt) {
 }
 
 function initUI() {
-  const tickers = Object.keys(DB);
-  if (!tickers.length) { showError('El JSON está vacío.'); return; }
+  const allTickers = Object.keys(DB);
+  if (!allTickers.length) { showError('El JSON está vacío.'); return; }
 
+  const firstFetched = DB[allTickers[0]]?.fetched_at;
   const bar = document.getElementById('tickerBar');
-  const firstFetched = DB[tickers[0]]?.fetched_at;
-  bar.innerHTML = tickers.map(t =>
-    `<button class="ticker-btn" id="btn_${t}" onclick="selectTicker('${t}')">${t}</button>`
-  ).join('') +
-  (firstFetched ? `<span class="last-update">Actualizado: ${new Date(firstFetched).toLocaleString('es-AR')}</span>` : '');
+
+  // Mag7 buttons — primary style
+  const mag7Btns = MAG7.filter(t => DB[t]).map(t =>
+    `<button class="ticker-btn mag7-btn" id="btn_${t}" onclick="selectTicker('${t}')">${t}</button>`
+  ).join('');
+
+  // Watchlist buttons — secondary style
+  const wlTickers = allTickers.filter(t => !MAG7.includes(t));
+  const wlBtns = wlTickers.length
+    ? `<div class="wl-divider"></div>` +
+      wlTickers.filter(t => DB[t]).map(t =>
+        `<button class="ticker-btn wl-btn" id="btn_${t}" onclick="selectTicker('${t}')">${t}</button>`
+      ).join('')
+    : '';
+
+  bar.innerHTML = mag7Btns + wlBtns +
+    (firstFetched ? `<span class="last-update">Actualizado: ${new Date(firstFetched).toLocaleString('es-AR')}</span>` : '');
 
   bar.style.display = 'flex';
   document.getElementById('paramsBar').style.display = 'flex';
   hideEl('emptyState');
   hideEl('loading');
-  selectTicker(tickers[0]);
+
+  // Auto-select first mag7 ticker available
+  const firstTicker = MAG7.find(t => DB[t]) || allTickers[0];
+  selectTicker(firstTicker);
 }
 
 function selectTicker(ticker) {
@@ -336,13 +370,54 @@ function render(ticker) {
   const terminal = pFCF[PROJ-1] * (1+termG) / (wacc - termG);
   const dcfPrice = (pvFCF + terminal/(1+wacc)**PROJ - curNetDebt) / sh;
 
-  const upside5 = price ? (ivAvg[4]/price - 1)*100 : 0;
-  const vClass  = upside5 > 20 ? 'buy' : upside5 < -15 ? 'sell' : 'hold';
-  const vIcon   = upside5 > 20 ? '🟢' : upside5 < -15 ? '🔴' : '⏸️';
-  const vLabel  = upside5 > 20 ? 'COMPRA' : upside5 < -15 ? 'CARA / VENTA' : 'MANTENER';
-  const vDesc   = upside5 > 20 ? 'Cotiza con descuento significativo vs su valor intrínseco estimado.'
-    : upside5 < -15 ? 'Podría estar sobrevaluada respecto a su valor intrínseco estimado.'
-    : 'Cotiza cerca de su valor intrínseco estimado.';
+  // ── Verdict — two-factor: CHEAP + HEALTHY ──────────────────────────────
+  // 1. CHEAP: current PER vs historical avg AND vs target
+  const historicalPERs = hist.slice(0, N-1)
+    .map((r,i) => r.hist_price && hEPS[i] ? r.hist_price / hEPS[i] : null)
+    .filter(v => v !== null && v > 0 && v < 200);
+  const avgHistPER = historicalPERs.length
+    ? historicalPERs.reduce((s,v) => s+v, 0) / historicalPERs.length : null;
+  const currentPER = lastEPS ? price / lastEPS : null;
+  const cheapVsHist   = avgHistPER && currentPER ? currentPER < avgHistPER  : false;
+  const cheapVsTarget = currentPER ? currentPER < tPER : false;
+  const isCheap = cheapVsHist && cheapVsTarget;
+
+  // 2. HEALTHY: 3 out of 4 indicators
+  const ttmRevGrowth  = hRev[N-2]  ? (hRev[N-1]  / hRev[N-2]  - 1) * 100 : null;
+  const ttmFCFGrowth  = hFCF[N-2]  ? (hFCF[N-1]  / hFCF[N-2]  - 1) * 100 : null;
+  const ttmEPSGrowth  = hEPS[N-2]  ? (hEPS[N-1]  / hEPS[N-2]  - 1) * 100 : null;
+  const prevEBITMargin= hRev[N-2]  ? hEbit[N-2]  / hRev[N-2]  * 100 : null;
+  const currEBITMargin= hRev[N-1]  ? hEbit[N-1]  / hRev[N-1]  * 100 : null;
+
+  const checks = {
+    revenueGrowth: ttmRevGrowth  !== null ? ttmRevGrowth  > 0  : false,
+    ebitMargin:    (currEBITMargin !== null && prevEBITMargin !== null)
+                   ? currEBITMargin >= prevEBITMargin * 0.97   : false, // 3% tolerance
+    fcfGrowth:     ttmFCFGrowth  !== null ? (hFCF[N-1] > 0 && ttmFCFGrowth > 0) : false,
+    epsGrowth:     ttmEPSGrowth  !== null ? ttmEPSGrowth  > 0  : false,
+  };
+  const healthyCount = Object.values(checks).filter(Boolean).length;
+  const isHealthy    = healthyCount >= 3;
+
+  // 3. Combined verdict
+  let vClass, vIcon, vLabel, vDesc;
+  if (isCheap && isHealthy) {
+    vClass = 'buy';  vIcon = '🟢';
+    vLabel = 'COMPRA';
+    vDesc  = `PER actual (${fm(currentPER,1)}x) por debajo del histórico (${fm(avgHistPER,1)}x) y objetivo. Fundamentals sólidos (${healthyCount}/4).`;
+  } else if (isCheap && !isHealthy) {
+    vClass = 'watch'; vIcon = '👀';
+    vLabel = 'ATENCIÓN — Precio atractivo';
+    vDesc  = `PER bajo vs histórico pero fundamentals débiles (${healthyCount}/4 indicadores saludables).`;
+  } else if (!isCheap && isHealthy) {
+    vClass = 'hold'; vIcon = '⏸️';
+    vLabel = 'MANTENER — Empresa sólida';
+    vDesc  = `Fundamentals excelentes (${healthyCount}/4) pero PER actual (${fm(currentPER,1)}x) por encima del objetivo (${fm(tPER,1)}x).`;
+  } else {
+    vClass = 'sell'; vIcon = '🔴';
+    vLabel = 'CARA / EVITAR';
+    vDesc  = `PER elevado vs histórico y objetivo. Fundamentals débiles (${healthyCount}/4).`;
+  }
 
   const fm  = (v,dec=0) => (v==null||isNaN(v)) ? '—' : v.toLocaleString('es-AR',{minimumFractionDigits:dec,maximumFractionDigits:dec});
   const fmM = v => {
@@ -458,10 +533,36 @@ function render(ticker) {
 
     <div class="verdict ${vClass}">
       <div class="v-icon">${vIcon}</div>
-      <div class="v-text"><h3>${vLabel}</h3><p>${vDesc}</p></div>
-      <div class="v-right">
-        <div class="pct">${upside5>=0?'+':''}${fm(upside5,1)}%</div>
-        <div class="vlbl">Potencial estimado (5 años)</div>
+      <div class="v-text">
+        <h3>${vLabel}</h3>
+        <p>${vDesc}</p>
+        <!-- Scorecard -->
+        <div class="scorecard">
+          <span class="sc-item ${checks.revenueGrowth?'sc-green':'sc-red'}">
+            ${checks.revenueGrowth?'✅':'❌'} Revenue +${fm(ttmRevGrowth,1)}%
+          </span>
+          <span class="sc-item ${checks.ebitMargin?'sc-green':'sc-red'}">
+            ${checks.ebitMargin?'✅':'❌'} EBIT Margin ${fm(currEBITMargin,1)}%
+          </span>
+          <span class="sc-item ${checks.fcfGrowth?'sc-green':'sc-red'}">
+            ${checks.fcfGrowth?'✅':'❌'} FCF +${fm(ttmFCFGrowth,1)}%
+          </span>
+          <span class="sc-item ${checks.epsGrowth?'sc-green':'sc-red'}">
+            ${checks.epsGrowth?'✅':'❌'} EPS +${fm(ttmEPSGrowth,1)}%
+          </span>
+        </div>
+        <!-- PER comparison -->
+        <div class="per-badges">
+          <span class="per-badge" style="background:rgba(255,255,255,.06);color:#94a3b8;border:1px solid #2d3748">
+            PER actual: ${fm(currentPER,1)}x
+          </span>
+          <span class="per-badge ${cheapVsHist?'sc-green':'sc-red'}">
+            ${cheapVsHist?'✅':'❌'} vs histórico avg: ${fm(avgHistPER,1)}x
+          </span>
+          <span class="per-badge ${cheapVsTarget?'sc-green':'sc-red'}">
+            ${cheapVsTarget?'✅':'❌'} vs objetivo: ${fm(tPER,1)}x
+          </span>
+        </div>
       </div>
     </div>
 
