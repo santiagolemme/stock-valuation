@@ -22,11 +22,27 @@ from datetime import datetime
 
 warnings.filterwarnings("ignore")
 
-TICKERS     = ["AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "TSLA"]
+# ── Cargar tickers desde watchlist.json ──────────────────────────────────────
+SCRIPT_DIR     = os.path.dirname(os.path.abspath(__file__))
+WATCHLIST_FILE = os.path.join(SCRIPT_DIR, "watchlist.json")
+
+with open(WATCHLIST_FILE, "r", encoding="utf-8") as f:
+    watchlist_cfg = json.load(f)
+
+MAG7      = watchlist_cfg.get("mag7", [])
+WATCHLIST = watchlist_cfg.get("watchlist", [])
+TICKERS   = MAG7 + [t for t in WATCHLIST if t not in MAG7]
+
 HIST_YEARS  = 4
-# Ruta relativa — funciona tanto en local como en GitHub Actions
-OUTPUT_DIR  = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
+OUTPUT_DIR  = os.path.join(SCRIPT_DIR, "data")
 OUTPUT_FILE = os.path.join(OUTPUT_DIR, f"magnificent7_{datetime.now().strftime('%Y%m%d')}.json")
+
+print("=" * 55)
+print("  Stock Valuation Fetcher")
+print(f"  Mag7:      {MAG7}")
+print(f"  Watchlist: {WATCHLIST}")
+print(f"  {datetime.now().strftime('%d/%m/%Y %H:%M')}")
+print("=" * 55)
 
 # ─────────────────────────────────────────────────────────────────────────────
 #  HELPERS
