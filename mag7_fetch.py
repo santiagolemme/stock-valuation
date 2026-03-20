@@ -257,7 +257,9 @@ def fetch_ticker(ticker):
 # ─────────────────────────────────────────────────────────────────────────────
 
 print("=" * 55)
-print("  MAG7 Data Fetcher  —  con TTM")
+print("  Stock Valuation Fetcher")
+print(f"  Mag7:      {MAG7}")
+print(f"  Watchlist: {WATCHLIST}")
 print(f"  {datetime.now().strftime('%d/%m/%Y %H:%M')}")
 print("=" * 55)
 
