@@ -342,8 +342,10 @@ function selectTicker(ticker) {
   currentTicker = ticker;
   const sel = document.getElementById('tickerSelect');
   if (sel) sel.value = ticker;
+  // Clear content before rendering to avoid showing stale comparison table
+  document.getElementById('content').innerHTML = '';
+  document.getElementById('errBox').style.display = 'none';
   render(ticker);
-  // Scroll to top so user sees the detail view
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
