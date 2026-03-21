@@ -211,12 +211,16 @@ function calcYoY(arr, idx) {
   if (idx <= 0) return null;
   const curr = arr[idx], prev = arr[idx-1];
   if (prev === null || prev === undefined || prev === 0) return null;
-  // If TTM value equals last annual (no update), use idx-1 vs idx-2
-  if (idx === arr.length-1 && curr === arr[idx-1] && idx >= 2) {
-    const p2 = arr[idx-2];
-    if (!p2) return null;
-    return (arr[idx-1] / p2 - 1) * 100;
+
+  // If TTM value is identical to last annual → use prior year's growth
+  // (fiscal year closes in Dec, so TTM = annual exactly)
+  if (curr === prev) {
+    if (idx >= 2 && arr[idx-2] !== null && arr[idx-2] !== 0) {
+      return (prev / arr[idx-2] - 1) * 100;
+    }
+    return null; // not enough history
   }
+
   return (curr / prev - 1) * 100;
 }
 
@@ -302,9 +306,10 @@ function initUI() {
   const mag7Available = MAG7.filter(t => DB[t]);
   const wlAvailable   = allTickers.filter(t => !MAG7.includes(t) && DB[t]);
 
-  // Build single dropdown with optgroups
+  // Build single dropdown with optgroups + comparison option
   const sel = document.getElementById('tickerSelect');
-  sel.innerHTML = `<option value="">Seleccioná ticker...</option>
+  sel.innerHTML = `
+    <option value="__compare__">📊 Tabla Comparativa</option>
     <optgroup label="── Mag 7 ──">
       ${mag7Available.map(t=>`<option value="${t}">${t} — ${DB[t].name||t}</option>`).join('')}
     </optgroup>` +
@@ -322,14 +327,15 @@ function initUI() {
   document.getElementById('paramsBar').style.display = 'flex';
   hideEl('emptyState'); hideEl('loading');
 
-  const first = mag7Available[0] || allTickers[0];
-  sel.value = first;
-  selectTicker(first);
+  // Default: show comparison table
+  sel.value = '__compare__';
+  renderComparison();
 }
 
 function onTickerSelect() {
   const t = document.getElementById('tickerSelect').value;
-  if (t) selectTicker(t);
+  if (t === '__compare__') renderComparison();
+  else if (t) selectTicker(t);
 }
 
 function selectTicker(ticker) {
@@ -339,7 +345,154 @@ function selectTicker(ticker) {
   render(ticker);
 }
 
-function recalc() { if (currentTicker) render(currentTicker); }
+function recalc() {
+  const sel = document.getElementById('tickerSelect');
+  if (sel?.value === '__compare__') renderComparison();
+  else if (currentTicker) render(currentTicker);
+}
+
+// ── Comparison Table ──────────────────────────────────────────────────────
+function renderComparison() {
+  currentTicker = null;
+  const tickers = Object.keys(DB);
+  const tPER      = +document.getElementById('t_per').value      || 20;
+  const tEVCF     = +document.getElementById('t_evcf').value     || 20;
+  const growth    = (+document.getElementById('t_growth').value  || 12) / 100;
+
+  const rows = tickers.map(ticker => {
+    const d    = DB[ticker];
+    if (!d) return null;
+    const hist = d.historical || [];
+    const N    = hist.length;
+    if (!N) return null;
+
+    const price    = d.price    || 0;
+    const mktCap   = d.mkt_cap  || 0;
+    const shares   = d.shares   || 1;
+    const hEPS     = hist.map(r => r.eps        || 0);
+    const hFCF     = hist.map(r => r.fcf        || 0);
+    const hNI      = hist.map(r => r.net_income || 0);
+    const hRev     = hist.map(r => r.revenue    || 0);
+    const hEbit    = hist.map(r => r.ebit       || 0);
+    const hND      = hist.map(r => r.net_debt   || 0);
+    const hEbitda  = hist.map(r => r.ebitda     || 0);
+
+    const lastEPS    = hEPS[N-1],  lastFCF    = hFCF[N-1];
+    const lastNI     = hNI[N-1],   lastEbit   = hEbit[N-1];
+    const lastRev    = hRev[N-1],  lastND     = hND[N-1];
+    const lastEbitda = hEbitda[N-1];
+    const ev         = mktCap + lastND;
+
+    const currentPER  = lastEPS    ? price / lastEPS    : null;
+    const mEVCF       = lastFCF    ? ev    / lastFCF    : null;
+    const mEVEBITDA   = lastEbitda ? ev    / lastEbitda : null;
+    const debtEbitda  = lastEbitda ? lastND / lastEbitda : null;
+    const fcfQuality  = lastNI     ? lastFCF / lastNI   : null;
+
+    // Last financial data date — clean format, no "TTM (...)"
+    const lastDataRaw  = hist[N-1]?.fiscal_end || hist[N-1]?.year || '—';
+    const lastDataDate = String(lastDataRaw).replace(/^TTM\s*\(([^)]+)\)$/, '$1');
+
+    // Historical avg PER — use hist_price if available, fallback gracefully
+    const histPERs = hist.slice(0, N-1)
+      .map((r,i) => {
+        const hp = r.hist_price || null;
+        return hp && hEPS[i] ? hp/hEPS[i] : null;
+      })
+      .filter(v => v && v>0 && v<200);
+    const avgHistPER = histPERs.length ? histPERs.reduce((s,v)=>s+v,0)/histPERs.length : null;
+
+    // IV year 5
+    const PROJ  = 5;
+    const pNI5  = lastNI  * (1+growth)**PROJ;
+    const pFCF5 = lastFCF * (1+growth)**PROJ;
+    const ivPER5  = (pNI5  * tPER)  / shares;
+    const ivEVCF5 = (pFCF5 * tEVCF - lastND) / shares;
+    const ivAvg5  = (ivPER5 + ivEVCF5) / 2;
+    const cagrAvg = price && ivAvg5 ? ((ivAvg5/price)**(1/5)-1)*100 : null;
+
+    const revYoY = calcYoY(hRev, N-1);
+    const epsYoY = calcYoY(hEPS, N-1);
+    const fcfYoY = calcYoY(hFCF, N-1);
+
+    const cheapVsHist   = avgHistPER && currentPER ? currentPER < avgHistPER  : false;
+    const cheapVsTarget = currentPER ? currentPER < tPER : false;
+    const isCheap = cheapVsHist && cheapVsTarget;
+    const currEBITMargin = lastRev ? lastEbit/lastRev*100 : null;
+    const prevEBITMargin = hRev[N-2] ? hEbit[N-2]/hRev[N-2]*100 : null;
+    const checks = {
+      rev:  revYoY !== null ? revYoY > 0 : false,
+      ebit: (currEBITMargin&&prevEBITMargin) ? currEBITMargin >= prevEBITMargin*0.97 : false,
+      fcf:  fcfYoY !== null ? (lastFCF>0 && fcfYoY>0) : false,
+      eps:  epsYoY !== null ? epsYoY > 0 : false,
+    };
+    const healthyCount = Object.values(checks).filter(Boolean).length;
+    const isHealthy = healthyCount >= 3;
+    let verdict, vColor;
+    if      (isCheap && isHealthy)  { verdict='🟢 COMPRA';   vColor='#4ade80'; }
+    else if (isCheap && !isHealthy) { verdict='👀 ATENCIÓN';  vColor='#60a5fa'; }
+    else if (!isCheap && isHealthy) { verdict='⏸️ MANTENER';  vColor='#fbbf24'; }
+    else                             { verdict='🔴 EVITAR';   vColor='#f87171'; }
+
+    return { ticker, d, price, currentPER, avgHistPER, mEVCF, mEVEBITDA,
+             debtEbitda, fcfQuality, cagrAvg, revYoY, epsYoY,
+             verdict, vColor, isCheap, isHealthy, healthyCount, lastDataDate };
+  }).filter(Boolean);
+
+  const col = (v, dec=1, suffix='') => v!==null&&!isNaN(v) ? fm(v,dec)+suffix : '—';
+  const pctCol = (v, dec=1) => {
+    if (v===null||isNaN(v)) return '<td>—</td>';
+    const c = v>=0?'#4ade80':'#f87171';
+    return `<td style="color:${c};font-weight:600">${v>=0?'+':''}${fm(v,dec)}%</td>`;
+  };
+  const perCol = (cur, avg) => {
+    if (!cur) return '<td>—</td>';
+    const cheap = avg && cur < avg;
+    return `<td style="color:${cheap?'#4ade80':'#f87171'};font-weight:600">${fm(cur,1)}x</td>`;
+  };
+
+  document.getElementById('content').innerHTML = `
+    <div class="sec-title" style="margin-bottom:16px">📊 Tabla Comparativa — Todos los Tickers</div>
+    <div class="t-wrap">
+      <table>
+        <thead><tr>
+          <th style="text-align:left">Ticker</th>
+          <th>Precio</th>
+          <th>Último dato</th>
+          <th>PER actual</th>
+          <th>PER hist. avg</th>
+          <th>EV/FCF</th>
+          <th>EV/EBITDA</th>
+          <th>Rev Y/Y</th>
+          <th>EPS Y/Y</th>
+          <th>FCF/NI</th>
+          <th>Deuda/EBITDA</th>
+          <th>CAGR 5a</th>
+          <th>Veredicto</th>
+        </tr></thead>
+        <tbody>
+          ${rows.map(r => `<tr style="cursor:pointer" onclick="selectTicker('${r.ticker}')">
+            <td><strong style="color:#fff">${r.ticker}</strong><br><span style="font-size:.7rem;color:#4b5563">${r.d.name||''}</span></td>
+            <td>${col(r.price,2)}</td>
+            <td style="font-size:.75rem;color:#4b5563">${r.lastDataDate}</td>
+            ${perCol(r.currentPER, r.avgHistPER)}
+            <td style="color:#94a3b8">${col(r.avgHistPER,1)}x</td>
+            <td style="color:${r.mEVCF&&r.mEVCF<tEVCF?'#4ade80':'#f87171'}">${col(r.mEVCF,1)}x</td>
+            <td>${col(r.mEVEBITDA,1)}x</td>
+            ${pctCol(r.revYoY)}
+            ${pctCol(r.epsYoY)}
+            <td style="color:${r.fcfQuality>=1?'#4ade80':r.fcfQuality>=0.8?'#fbbf24':'#f87171'}">${col(r.fcfQuality,2)}</td>
+            <td style="color:${r.debtEbitda!==null&&r.debtEbitda<2?'#4ade80':r.debtEbitda!==null&&r.debtEbitda<3?'#fbbf24':'#f87171'}">${col(r.debtEbitda,1)}x</td>
+            <td style="color:${r.cagrAvg>12?'#4ade80':r.cagrAvg>6?'#fbbf24':'#f87171'};font-weight:700">${col(r.cagrAvg,0)}%</td>
+            <td style="color:${r.vColor};font-weight:700;white-space:nowrap">${r.verdict}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+    <p style="font-size:.72rem;color:#4b5563;margin-top:8px">Click en cualquier fila para ver el análisis detallado.</p>
+  `;
+  showEl('content');
+}
 
 // ── Render ────────────────────────────────────────────────────────────────
 function render(ticker) {
@@ -553,6 +706,25 @@ function render(ticker) {
       </div>
     </div>
 
+    <!-- Quality metrics MOVED UP — right after verdict -->
+    <div class="sec-title">Métricas de Calidad — Evolución Histórica</div>
+    <div class="t-wrap"><table>
+      <thead><tr><th>Métrica</th>${thCols}</tr></thead>
+      <tbody>
+        ${qualityRow('Revenue Y/Y %',   revYoY,     true)}
+        ${qualityRow('EBIT Margin %',   ebitMargin, false)}
+        ${qualityRow('Net Margin %',    netMargin,  false)}
+        ${qualityRow('ROIC %',          roic,       false)}
+        ${qualityRow('Deuda / EBITDA',  debtEbitdaArr, false, 1)}
+        ${qualityRow('FCF / Net Income',fcfNIArr,      false, 2)}
+        <tr><td colspan="${1+allYears.length}" style="padding:4px 11px;background:#111827;color:#4b5563;font-size:.72rem;letter-spacing:.5px;text-transform:uppercase">Precio · EPS · PER</td></tr>
+        ${qualityRow('Precio',          allHistPrice, false, 2, true)}
+        ${qualityRow('EPS',             allEPS,       false, 2)}
+        ${qualityRow('EPS Y/Y %',       epsYoY,       true)}
+        ${qualityRow('PER',             perAll,       false, 1)}
+      </tbody>
+    </table></div>
+
     <div class="sec-title">Estado de Resultados (millones ${currency})</div>
     <div class="t-wrap"><table>
       <thead><tr><th>Métrica</th>${thCols}</tr></thead>
@@ -626,22 +798,6 @@ function render(ticker) {
         <div class="mrow"><span class="ml">DCF</span><span class="mv">${fm(dcfPrice,2)}</span></div>
       </div>
     </div>
-
-    <div class="sec-title">Métricas de Calidad — Evolución Histórica</div>
-    <div class="t-wrap"><table>
-      <thead><tr><th>Métrica</th>${thCols}</tr></thead>
-      <tbody>
-        ${qualityRow('Revenue Y/Y %',  revYoY,     true)}
-        ${qualityRow('EBIT Margin %',  ebitMargin, false)}
-        ${qualityRow('Net Margin %',   netMargin,  false)}
-        ${qualityRow('ROIC %',         roic,       false)}
-        <tr><td colspan="${1+allYears.length}" style="padding:4px 11px;background:#111827;color:#4b5563;font-size:.72rem;letter-spacing:.5px;text-transform:uppercase">Precio · EPS · PER</td></tr>
-        ${qualityRow('Precio',         allHistPrice, false, 2, true)}
-        ${qualityRow('EPS',            allEPS,       false, 2)}
-        ${qualityRow('EPS Y/Y %',      epsYoY,       true)}
-        ${qualityRow('PER',            perAll,       false, 1)}
-      </tbody>
-    </table></div>
 
     <div class="chart-wrap">
       <h3>Valor Intrínseco vs Precio Actual</h3>
