@@ -343,6 +343,8 @@ function selectTicker(ticker) {
   const sel = document.getElementById('tickerSelect');
   if (sel) sel.value = ticker;
   render(ticker);
+  // Scroll to top so user sees the detail view
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function recalc() {
