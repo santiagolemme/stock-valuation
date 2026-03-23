@@ -3,7 +3,16 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 function renderCharts(d, annual) {
-  const { hRev, hEbit, hNI, hFCF, hEbitda, hND, hEPS, histYears, price, mktCap } = annual;
+  const hRev     = annual.hRev;
+  const hEbit    = annual.hEbit;
+  const hNI      = annual.hNI;
+  const hFCF     = annual.hFCF;
+  const hEbitda  = annual.hEbitda;
+  const hND      = annual.hND;
+  const hEPS     = annual.hEPS;
+  const histYears= annual.histYears;
+  const price    = annual.price;
+  const mktCap   = annual.mktCap;
 
   // ── Quarterly data ──────────────────────────────────────────────────────────
   const qtrs   = d.quarterly || [];
