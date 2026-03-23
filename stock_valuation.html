@@ -620,9 +620,7 @@ function render(ticker) {
   const epsYoY     = yoyArr(allEPS);
   const ebitMargin = allRev.map((v,i) => v ? allEbit[i]/v*100 : null);
   const netMargin  = allRev.map((v,i) => v ? allNI[i]/v*100   : null);
-  const roic          = allEbit.map((v,i) => { const evN=mktCap+allND[i]; return evN?v/evN*100:null; });
-  const debtEbitdaArr = allEbitda.map((v,i) => v ? allND[i]/v : null);
-  const fcfNIArr      = allNI.map((v,i)     => v ? allFCF[i]/v : null);
+  const roic       = allEbit.map((v,i) => { const evN=mktCap+allND[i]; return evN?v/evN*100:null; });
 
   const allHistPrice = [...hist.map(r=>r.hist_price||null), ...Array(PROJ).fill(null)];
   allHistPrice[N-1]  = price;
@@ -852,9 +850,9 @@ function render(ticker) {
         <canvas id="chartDebt"></canvas>
       </div>
 
-      <!-- Dilución (Shares) -->
+      <!-- EV/FCF o Shares -->
       <div class="chart-wrap">
-        <h3>Shares Outstanding (M)</h3>
+        <h3 id="chartSharesTitle">Shares Outstanding (M)</h3>
         <canvas id="chartShares"></canvas>
       </div>
 
