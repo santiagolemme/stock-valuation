@@ -892,7 +892,16 @@ function render(ticker) {
     maintainAspectRatio: true,
     plugins: { legend: { labels: { color:'#94a3b8', font:{size:10}, boxWidth:12 } } },
     scales: {
-      x: { ticks:{color:'#94a3b8', font:{size:9}, maxRotation:45}, grid:{color:'#1e2533'} },
+      x: {
+        ticks:{
+          color:'#94a3b8', font:{size:9}, maxRotation:45,
+          // Show only every 4th label (quarterly → annual labels on axis)
+          callback: function(val, idx) {
+            return idx % 4 === 0 ? this.getLabelForValue(val) : '';
+          }
+        },
+        grid:{color:'#1e2533'}
+      },
       y: { ticks:{color:'#94a3b8', font:{size:10}}, grid:{color:'#1e2533'} }
     }
   };
@@ -912,7 +921,9 @@ function render(ticker) {
   const ds = (label, data, color, fill=false) => ({
     label, data: data.map(v => v!==null&&!isNaN(v) ? +v.toFixed(2) : null),
     borderColor:color, backgroundColor: fill?color+'22':'transparent',
-    borderWidth:2, pointRadius:2, pointBackgroundColor:color,
+    borderWidth:2, pointRadius: useQtr ? 3 : 5,
+    pointHoverRadius: 6,
+    pointBackgroundColor:color,
     tension:0.3, fill, spanGaps:true
   });
 
