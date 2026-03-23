@@ -28,7 +28,23 @@
 <div class="ticker-section" id="tickerSection">
   <div class="ticker-row" id="tickerRow">
     <span class="row-label">Ticker</span>
-    <select class="wl-sel" id="tickerSelect" onchange="onTickerSelect()" style="max-width:280px"></select>
+    <!-- Custom dropdown with checkboxes -->
+    <div class="dd-wrap" id="ddWrap">
+      <button class="dd-btn" id="ddBtn" onclick="toggleDropdown()">
+        <span id="ddLabel">📊 Tabla Comparativa</span>
+        <span class="dd-arrow">▾</span>
+      </button>
+      <div class="dd-menu" id="ddMenu" style="display:none">
+        <div class="dd-item dd-compare" onclick="selectCompare()">
+          <span>📊 Tabla Comparativa</span>
+        </div>
+        <div class="dd-sep"></div>
+        <div class="dd-group-label">── Mag 7 ──</div>
+        <div id="ddMag7Items"></div>
+        <div class="dd-group-label" id="ddWLLabel" style="display:none">── Watchlist ──</div>
+        <div id="ddWLItems"></div>
+      </div>
+    </div>
     <span class="last-update" id="lastUpdate"></span>
   </div>
 </div>
