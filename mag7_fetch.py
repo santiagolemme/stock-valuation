@@ -137,12 +137,25 @@ def fetch_ticker(ticker):
     mkt_cap    = safe(inf.get("marketCap") or (price * shares))
 
     # ── DataFrames ───────────────────────────────────────────────────────────
-    inc_annual = t.financials           # anual,    cols = fechas desc
+    inc_annual = t.financials           # anual
     inc_qtr    = t.quarterly_financials # trimestral
     bal_annual = t.balance_sheet
     bal_qtr    = t.quarterly_balance_sheet
     cf_annual  = t.cashflow
     cf_qtr     = t.quarterly_cashflow
+
+    # yfinance por defecto trae pocos quarters — forzar más historia
+    try:
+        import yfinance as _yf
+        _t2 = _yf.Ticker(ticker)
+        inc_qtr2 = _t2.get_income_stmt(freq='quarterly', as_dict=False, pretty=False, trailing=False)
+        bal_qtr2 = _t2.get_balance_sheet(freq='quarterly', as_dict=False, pretty=False, trailing=False)
+        cf_qtr2  = _t2.get_cash_flow(freq='quarterly', as_dict=False, pretty=False, trailing=False)
+        if inc_qtr2 is not None and not inc_qtr2.empty: inc_qtr = inc_qtr2
+        if bal_qtr2 is not None and not bal_qtr2.empty: bal_qtr = bal_qtr2
+        if cf_qtr2  is not None and not cf_qtr2.empty:  cf_qtr  = cf_qtr2
+    except Exception:
+        pass  # fallback a los datos por defecto
 
     # ── HISTÓRICO ANUAL (últimos HIST_YEARS años completos) ──────────────────
     rev_ann    = series_to_annual(get_row(inc_annual, "Total Revenue"))
@@ -239,7 +252,7 @@ def fetch_ticker(ticker):
         q_stdebt = qget(bal_qtr, "Current Debt", "Short Term Debt")
         q_cash   = qget(bal_qtr, "Cash And Cash Equivalents", "Cash")
         q_nd     = q_ltdebt + q_stdebt - q_cash
-        q_shares = safe(inf.get("sharesOutstanding", 0))
+        q_shares = qget(bal_qtr, "Ordinary Shares Number", "Share Issued", "CommonStock")
 
         # Precio de cierre al final del quarter
         q_price  = price_at_fiscal_end(qdate)
