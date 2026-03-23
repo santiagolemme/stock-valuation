@@ -2,7 +2,6 @@
 //  UI — initialization, navigation, dropdown, helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-// ── DOM helpers ───────────────────────────────────────────────────────────────
 const showEl    = id => { const e=document.getElementById(id); if(e) e.style.display='block'; };
 const hideEl    = id => { const e=document.getElementById(id); if(e) e.style.display='none';  };
 const setStatus = t  => { const e=document.getElementById('statusTxt'); if(e) e.textContent=t; };
@@ -12,7 +11,6 @@ function showError(msg) {
   if (b) { b.textContent='❌ '+msg; b.style.display='block'; }
 }
 
-// ── Format helpers ────────────────────────────────────────────────────────────
 const fm = (v, dec=0) => {
   if (v===null||v===undefined||isNaN(v)) return '—';
   return v.toLocaleString('es-AR', {minimumFractionDigits:dec, maximumFractionDigits:dec});
@@ -28,7 +26,8 @@ const fmX       = v => v&&!isNaN(v) ? fm(v,1)+'x' : '—';
 const formatDate = d => `${d.slice(6,8)}/${d.slice(4,6)}/${d.slice(0,4)}`;
 
 // ── Selection state ───────────────────────────────────────────────────────────
-let selectedTickers = [];   // [] = compare all, [A] = detail, [A,B] = compare 2
+let selectedTickers = [];
+let sortState = { col: null, dir: -1 };
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 window.addEventListener('load', async () => {
@@ -65,11 +64,9 @@ function initUI() {
   const mag7Available = MAG7.filter(t => DB[t]);
   const wlAvailable   = allTickers.filter(t => !MAG7.includes(t) && DB[t]);
 
-  // Mag7 items
   document.getElementById('ddMag7Items').innerHTML =
     mag7Available.map(t => ddItem(t, DB[t].name||t)).join('');
 
-  // Watchlist items
   const wlEl = document.getElementById('ddWLItems');
   const wlLb = document.getElementById('ddWLLabel');
   if (wlAvailable.length) {
@@ -79,7 +76,6 @@ function initUI() {
     wlLb.style.display = 'none';
   }
 
-  // Last update
   const firstFetched = DB[allTickers[0]]?.fetched_at;
   const lu = document.getElementById('lastUpdate');
   if (lu && firstFetched)
@@ -89,7 +85,6 @@ function initUI() {
   document.getElementById('paramsBar').style.display     = 'flex';
   hideEl('emptyState'); hideEl('loading');
 
-  // Default: comparison table
   selectedTickers = [];
   updateDropdownLabel();
   renderComparison();
@@ -113,33 +108,38 @@ function toggleDropdown() {
   btn.classList.toggle('open', open);
 }
 
-// Close on outside click
 document.addEventListener('click', e => {
   const wrap = document.getElementById('ddWrap');
-  if (wrap && !wrap.contains(e.target)) {
-    document.getElementById('ddMenu').style.display = 'none';
-    document.getElementById('ddBtn').classList.remove('open');
-  }
+  if (wrap && !wrap.contains(e.target)) closeDropdown();
 });
 
-// ── Ticker selection ──────────────────────────────────────────────────────────
-function selectCompare() {
-  // Deselect all
-  selectedTickers.forEach(t => {
-    const chk = document.getElementById('chk_'+t);
-    if (chk) chk.checked = false;
-    document.getElementById('ddItem_'+t)?.classList.remove('selected');
-  });
-  selectedTickers = [];
-  updateDropdownLabel();
-  closeDropdown();
-  renderComparison();
+function closeDropdown() {
+  document.getElementById('ddMenu').style.display = 'none';
+  document.getElementById('ddBtn').classList.remove('open');
 }
 
+// ── Confirm button inside dropdown ────────────────────────────────────────────
+function confirmSelection() {
+  closeDropdown();
+  applySelection();
+}
+
+function applySelection() {
+  document.getElementById('content').innerHTML = '';
+  document.getElementById('errBox').style.display = 'none';
+
+  if (selectedTickers.length === 0)      renderComparison();
+  else if (selectedTickers.length === 1) render(selectedTickers[0]);
+  else                                   renderCompare2(selectedTickers[0], selectedTickers[1]);
+
+  window.scrollTo({ top:0, behavior:'smooth' });
+}
+
+// ── Ticker checkbox ───────────────────────────────────────────────────────────
 function onTickerCheck(ticker, checked) {
   if (checked) {
     if (selectedTickers.length >= 2) {
-      // Remove oldest selection
+      // Remove oldest
       const removed = selectedTickers.shift();
       const chk = document.getElementById('chk_'+removed);
       if (chk) chk.checked = false;
@@ -151,34 +151,53 @@ function onTickerCheck(ticker, checked) {
     selectedTickers = selectedTickers.filter(t => t !== ticker);
     document.getElementById('ddItem_'+ticker)?.classList.remove('selected');
   }
-
   updateDropdownLabel();
+  updateConfirmBtn();
+}
 
-  if (selectedTickers.length === 0)      { closeDropdown(); renderComparison(); }
-  else if (selectedTickers.length === 1) { closeDropdown(); render(selectedTickers[0]); }
-  else if (selectedTickers.length === 2) { closeDropdown(); renderCompare2(selectedTickers[0], selectedTickers[1]); }
+function updateConfirmBtn() {
+  const btn = document.getElementById('ddConfirmBtn');
+  if (!btn) return;
+  const n = selectedTickers.length;
+  if (n === 0) {
+    btn.textContent = '📊 Ver tabla comparativa';
+    btn.style.background = '#1e3a5f';
+    btn.style.color = '#60a5fa';
+  } else if (n === 1) {
+    btn.textContent = `🔍 Ver análisis de ${selectedTickers[0]}`;
+    btn.style.background = '#14532d';
+    btn.style.color = '#4ade80';
+  } else {
+    btn.textContent = `⚖️ Comparar ${selectedTickers[0]} vs ${selectedTickers[1]}`;
+    btn.style.background = '#2d1b69';
+    btn.style.color = '#a78bfa';
+  }
 }
 
 function updateDropdownLabel() {
   const lbl = document.getElementById('ddLabel');
   if (!lbl) return;
-  if (selectedTickers.length === 0) {
-    lbl.textContent = '📊 Tabla Comparativa';
-  } else if (selectedTickers.length === 1) {
-    lbl.textContent = selectedTickers[0];
-  } else {
-    lbl.textContent = selectedTickers[0] + '  vs  ' + selectedTickers[1];
-  }
+  if (selectedTickers.length === 0)      lbl.textContent = '📊 Tabla Comparativa';
+  else if (selectedTickers.length === 1) lbl.textContent = selectedTickers[0];
+  else lbl.textContent = selectedTickers[0] + '  vs  ' + selectedTickers[1];
 }
 
-function closeDropdown() {
-  document.getElementById('ddMenu').style.display = 'none';
-  document.getElementById('ddBtn').classList.remove('open');
+// ── "Tabla comparativa" option ────────────────────────────────────────────────
+function selectCompare() {
+  selectedTickers.forEach(t => {
+    const chk = document.getElementById('chk_'+t);
+    if (chk) chk.checked = false;
+    document.getElementById('ddItem_'+t)?.classList.remove('selected');
+  });
+  selectedTickers = [];
+  updateDropdownLabel();
+  updateConfirmBtn();
+  closeDropdown();
+  renderComparison();
 }
 
 // ── Navigate from comparison table row ───────────────────────────────────────
 function selectTicker(ticker) {
-  // Deselect previous
   selectedTickers.forEach(t => {
     const chk = document.getElementById('chk_'+t);
     if (chk) chk.checked = false;
@@ -189,6 +208,7 @@ function selectTicker(ticker) {
   if (chk) chk.checked = true;
   document.getElementById('ddItem_'+ticker)?.classList.add('selected');
   updateDropdownLabel();
+  updateConfirmBtn();
   document.getElementById('content').innerHTML = '';
   document.getElementById('errBox').style.display = 'none';
   render(ticker);
@@ -228,28 +248,3 @@ function calcYoY(arr, idx) {
   return (curr/prev-1)*100;
 }
 function yoyArr(arr) { return arr.map((_,i) => i===0?null:calcYoY(arr,i)); }
-
-// ── Sortable table helper (called from render.js) ─────────────────────────────
-let sortState = { col: null, dir: 1 };
-
-function makeSortable(tableId, rows, renderFn) {
-  const table = document.getElementById(tableId);
-  if (!table) return;
-  table.querySelectorAll('thead th.sortable').forEach((th, idx) => {
-    th.addEventListener('click', () => {
-      const col = th.dataset.col;
-      if (sortState.col === col) sortState.dir *= -1;
-      else { sortState.col = col; sortState.dir = 1; }
-      // Update header classes
-      table.querySelectorAll('thead th').forEach(h => {
-        h.classList.remove('sort-asc','sort-desc');
-      });
-      th.classList.add(sortState.dir === 1 ? 'sort-desc' : 'sort-asc');
-      // Re-render sorted
-      renderFn(col, sortState.dir);
-    });
-  });
-}
-function yoyArr(arr) {
-  return arr.map((_,i) => i===0 ? null : calcYoY(arr,i));
-}
