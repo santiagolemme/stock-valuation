@@ -620,9 +620,7 @@ function render(ticker) {
   const epsYoY     = yoyArr(allEPS);
   const ebitMargin = allRev.map((v,i) => v ? allEbit[i]/v*100 : null);
   const netMargin  = allRev.map((v,i) => v ? allNI[i]/v*100   : null);
-  const roic          = allEbit.map((v,i) => { const evN=mktCap+allND[i]; return evN?v/evN*100:null; });
-  const debtEbitdaArr = allEbitda.map((v,i) => v ? allND[i]/v : null);
-  const fcfNIArr      = allNI.map((v,i)     => v ? allFCF[i]/v : null);
+  const roic       = allEbit.map((v,i) => { const evN=mktCap+allND[i]; return evN?v/evN*100:null; });
 
   const allHistPrice = [...hist.map(r=>r.hist_price||null), ...Array(PROJ).fill(null)];
   allHistPrice[N-1]  = price;
@@ -864,126 +862,111 @@ function render(ticker) {
   showEl('content');
   if (chartInst) chartInst.destroy();
 
-  // ── Chart helpers ─────────────────────────────────────────────────────────
-  const histLabels = histYears.map(y => String(y));
-  const allLabels  = allYears.map(y => String(y));
+  // ── Quarterly data for charts ─────────────────────────────────────────────
+  const qtrs = (d.quarterly || []);
+  const qLabels  = qtrs.map(r => r.date?.slice(0,7) || '');  // "YYYY-MM"
+  const qRev     = qtrs.map(r => (r.revenue    ||0)/1e6);
+  const qEbit    = qtrs.map(r => (r.ebit       ||0)/1e6);
+  const qNI      = qtrs.map(r => (r.net_income ||0)/1e6);
+  const qFCF     = qtrs.map(r => (r.fcf        ||0)/1e6);
+  const qEPS     = qtrs.map(r =>  r.eps        ||0);
+  const qEbitda  = qtrs.map(r => (r.ebitda     ||0)/1e6);
+  const qND      = qtrs.map(r => (r.net_debt   ||0)/1e6);
+  const qShares  = qtrs.map(r => (r.shares     ||0)/1e6);
 
+  const qEbitMargin = qRev.map((v,i) => v ? qEbit[i]/v*100   : null);
+  const qNetMargin  = qRev.map((v,i) => v ? qNI[i]/v*100     : null);
+  const qROIC       = qEbit.map((v,i)=> { const evN=mktCap/1e6+qND[i]; return evN?v/evN*100:null; });
+  const qDebtEbitda = qEbitda.map((v,i) => v ? qND[i]/v : null);
+  const qEVEBITDA   = qEbitda.map((v,i) => { const evN=mktCap/1e6+qND[i]; return v?evN/v:null; });
+
+  // Fallback to annual if no quarterly data
+  const useQtr = qtrs.length > 0;
+  const labels  = useQtr ? qLabels  : histYears.map(String);
+
+  // ── Chart helpers ─────────────────────────────────────────────────────────
   const chartDefaults = {
     responsive: true,
     maintainAspectRatio: true,
     plugins: { legend: { labels: { color:'#94a3b8', font:{size:10}, boxWidth:12 } } },
     scales: {
-      x: { ticks:{color:'#94a3b8', font:{size:10}}, grid:{color:'#1e2533'} },
+      x: { ticks:{color:'#94a3b8', font:{size:9}, maxRotation:45}, grid:{color:'#1e2533'} },
       y: { ticks:{color:'#94a3b8', font:{size:10}}, grid:{color:'#1e2533'} }
     }
   };
 
-  const mkLine = (id, labels, datasets, opts={}) => {
+  const mkLine = (id, labels, datasets) => {
     const el = document.getElementById(id);
     if (!el) return;
-    new Chart(el.getContext('2d'), {
-      type: 'line',
-      data: { labels, datasets },
-      options: { ...chartDefaults, ...opts }
-    });
+    new Chart(el.getContext('2d'), { type:'line', data:{labels, datasets}, options:chartDefaults });
   };
 
-  const mkBar = (id, labels, datasets, opts={}) => {
+  const mkBar = (id, labels, datasets) => {
     const el = document.getElementById(id);
     if (!el) return;
-    new Chart(el.getContext('2d'), {
-      type: 'bar',
-      data: { labels, datasets },
-      options: { ...chartDefaults, ...opts }
-    });
+    new Chart(el.getContext('2d'), { type:'bar', data:{labels, datasets}, options:chartDefaults });
   };
 
-  const ds = (label, data, color, fill=false, dashed=false) => ({
-    label, data: data.map(v => v !== null && !isNaN(v) ? +v.toFixed(2) : null),
-    borderColor: color, backgroundColor: fill ? color.replace(')',',0.12)').replace('rgb','rgba') : 'transparent',
-    borderWidth: 2, pointRadius: 4, pointBackgroundColor: color,
-    tension: 0.3, fill,
-    borderDash: dashed ? [5,4] : [],
-    spanGaps: true
+  const ds = (label, data, color, fill=false) => ({
+    label, data: data.map(v => v!==null&&!isNaN(v) ? +v.toFixed(2) : null),
+    borderColor:color, backgroundColor: fill?color+'22':'transparent',
+    borderWidth:2, pointRadius:2, pointBackgroundColor:color,
+    tension:0.3, fill, spanGaps:true
   });
 
   const dsBar = (label, data, color) => ({
-    label, data: data.map(v => v !== null && !isNaN(v) ? +v.toFixed(2) : null),
-    backgroundColor: color, borderRadius: 4, borderSkipped: false
+    label, data: data.map(v => v!==null&&!isNaN(v) ? +v.toFixed(2) : null),
+    backgroundColor: data.map(v => v < 0 ? '#f87171' : color),
+    borderRadius:3, borderSkipped:false
   });
 
-  // FCF YoY for hist only
-  const fcfYoYHist = hFCF.map((v,i) => i===0 ? null : calcYoY(hFCF, i));
+  // 1. Revenue (quarterly, millones)
+  mkBar('chartRevYoY', labels, [dsBar('Revenue (M)', useQtr?qRev:hRev.map(v=>v/1e6), '#4ade80')]);
 
-  // Shares from JSON (mkt_cap / price proxy or stored)
-  const sharesHist = hist.map(r => {
-    const s = r.shares_outstanding || null;
-    return s ? s/1e6 : null;
-  });
-
-  // EV/EBITDA historical
-  const evEbitdaHist = hEbitda.map((v,i) => {
-    const evN = (hist[i]?.mkt_cap || mktCap) + hND[i];
-    return v ? evN/v : null;
-  });
-
-  // PER historical (already computed)
-  const perHistArr = hist.map((r,i) => {
-    const hp = r.hist_price || null;
-    return hp && hEPS[i] ? hp/hEPS[i] : null;
-  });
-
-  // 1. Revenue Y/Y %
-  mkBar('chartRevYoY', histLabels,
-    [dsBar('Revenue Y/Y %', hRev.map((v,i) => i===0?null:calcYoY(hRev,i)), '#4ade80')]);
-
-  // 2. FCF Growth %
-  mkBar('chartFCFYoY', histLabels,
-    [dsBar('FCF Y/Y %', fcfYoYHist, '#60a5fa')]);
+  // 2. FCF (quarterly, millones)
+  mkBar('chartFCFYoY', labels, [dsBar('FCF (M)', useQtr?qFCF:hFCF.map(v=>v/1e6), '#60a5fa')]);
 
   // 3. Margins
-  const ebitM = hEbit.map((v,i) => hRev[i] ? v/hRev[i]*100 : null);
-  const netM  = hNI.map((v,i)   => hRev[i] ? v/hRev[i]*100 : null);
-  mkLine('chartMargins', histLabels, [
-    ds('EBIT Margin %', ebitM, '#4ade80', true),
-    ds('Net Margin %',  netM,  '#a78bfa', true),
+  mkLine('chartMargins', labels, [
+    ds('EBIT Margin %', useQtr?qEbitMargin:hEbit.map((v,i)=>hRev[i]?v/hRev[i]*100:null), '#4ade80', true),
+    ds('Net Margin %',  useQtr?qNetMargin :hNI.map((v,i) =>hRev[i]?v/hRev[i]*100:null), '#a78bfa', true),
   ]);
 
   // 4. ROIC %
-  const roicHist = hEbit.map((v,i) => {
-    const evN = mktCap + hND[i]; return evN ? v/evN*100 : null;
-  });
-  mkLine('chartROIC', histLabels,
-    [ds('ROIC %', roicHist, '#fbbf24', true)]);
+  mkLine('chartROIC', labels, [
+    ds('ROIC %', useQtr?qROIC:hEbit.map((v,i)=>{const evN=mktCap+hND[i];return evN?v/evN*100:null;}), '#fbbf24', true)
+  ]);
 
   // 5. EV/EBITDA
-  mkLine('chartEVEBITDA', histLabels,
-    [ds('EV/EBITDA', evEbitdaHist, '#f87171')]);
+  mkLine('chartEVEBITDA', labels, [
+    ds('EV/EBITDA', useQtr?qEVEBITDA:hEbitda.map((v,i)=>v?(mktCap/1e6+hND[i]/1e6)/v*1e6:null), '#f87171')
+  ]);
 
-  // 6. Price history
-  const priceHist = hist.map(r => r.hist_price || null);
-  priceHist[hist.length-1] = price; // TTM = current price
-  mkLine('chartPrice', histLabels,
-    [ds('Precio USD', priceHist, '#4ade80', true)]);
+  // 6. Precio histórico — trimestral si disponible
+  const qPrices   = qtrs.map(r => r.price || null);
+  const hasPriceQ = qPrices.some(v => v !== null);
+  if (hasPriceQ) {
+    mkLine('chartPrice', labels, [ds('Precio USD', qPrices, '#4ade80', true)]);
+  } else {
+    const priceHist = hist.map(r => r.hist_price||null);
+    priceHist[hist.length-1] = price;
+    mkLine('chartPrice', histYears.map(String), [ds('Precio USD', priceHist, '#4ade80', true)]);
+  }
 
-  // 7. Debt/EBITDA
-  const debtHist = hEbitda.map((v,i) => v ? hND[i]/v : null);
-  mkBar('chartDebt', histLabels,
-    [dsBar('Deuda/EBITDA', debtHist, '#f87171')]);
+  // 7. Deuda/EBITDA
+  mkLine('chartDebt', labels, [
+    ds('Deuda/EBITDA', useQtr?qDebtEbitda:hEbitda.map((v,i)=>v?hND[i]/v/1e6:null), '#f87171')
+  ]);
 
-  // 8. Shares outstanding — use mkt_cap/price as proxy if not stored
-  const sharesSeries = hist.map((r,i) => {
-    if (r.shares_outstanding) return r.shares_outstanding/1e6;
-    // fallback: not available per year in current JSON
-    return null;
-  });
-  const hasShares = sharesSeries.some(v => v !== null);
+  // 8. Shares Outstanding (M)
+  const hasShares = qShares.some(v => v > 0);
   if (hasShares) {
-    mkLine('chartShares', histLabels,
-      [ds('Shares (M)', sharesSeries, '#60a5fa')]);
+    mkLine('chartShares', labels, [
+      ds('Shares (M)', useQtr?qShares:[], '#60a5fa')
+    ]);
   } else {
     const el = document.getElementById('chartShares');
-    if (el) el.parentElement.innerHTML += '<p style="color:#4b5563;font-size:.75rem;text-align:center;padding:20px 0">Dato no disponible en el JSON actual.<br>Requiere re-correr el script Python.</p>';
+    if (el) el.parentElement.innerHTML += '<p style="color:#4b5563;font-size:.75rem;text-align:center;padding:20px 0">Re-corré el script Python para obtener este dato.</p>';
   }
 }
 </script>
