@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-//  UI — initialization, navigation, helpers
+//  UI — initialization, navigation, dropdown, helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
 // ── DOM helpers ───────────────────────────────────────────────────────────────
@@ -26,6 +26,9 @@ const fmM = v => {
 };
 const fmX       = v => v&&!isNaN(v) ? fm(v,1)+'x' : '—';
 const formatDate = d => `${d.slice(6,8)}/${d.slice(4,6)}/${d.slice(0,4)}`;
+
+// ── Selection state ───────────────────────────────────────────────────────────
+let selectedTickers = [];   // [] = compare all, [A] = detail, [A,B] = compare 2
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 window.addEventListener('load', async () => {
@@ -54,7 +57,7 @@ window.addEventListener('load', async () => {
   }
 });
 
-// ── Ticker UI ─────────────────────────────────────────────────────────────────
+// ── Build dropdown ────────────────────────────────────────────────────────────
 function initUI() {
   const allTickers    = Object.keys(DB);
   if (!allTickers.length) { showError('JSON vacío.'); return; }
@@ -62,17 +65,21 @@ function initUI() {
   const mag7Available = MAG7.filter(t => DB[t]);
   const wlAvailable   = allTickers.filter(t => !MAG7.includes(t) && DB[t]);
 
-  const sel = document.getElementById('tickerSelect');
-  sel.innerHTML = `
-    <option value="__compare__">📊 Tabla Comparativa</option>
-    <optgroup label="── Mag 7 ──">
-      ${mag7Available.map(t=>`<option value="${t}">${t} — ${DB[t].name||t}</option>`).join('')}
-    </optgroup>` +
-    (wlAvailable.length ? `
-    <optgroup label="── Watchlist ──">
-      ${wlAvailable.map(t=>`<option value="${t}">${t} — ${DB[t].name||t}</option>`).join('')}
-    </optgroup>` : '');
+  // Mag7 items
+  document.getElementById('ddMag7Items').innerHTML =
+    mag7Available.map(t => ddItem(t, DB[t].name||t)).join('');
 
+  // Watchlist items
+  const wlEl = document.getElementById('ddWLItems');
+  const wlLb = document.getElementById('ddWLLabel');
+  if (wlAvailable.length) {
+    wlEl.innerHTML = wlAvailable.map(t => ddItem(t, DB[t].name||t)).join('');
+    wlLb.style.display = 'block';
+  } else {
+    wlLb.style.display = 'none';
+  }
+
+  // Last update
   const firstFetched = DB[allTickers[0]]?.fetched_at;
   const lu = document.getElementById('lastUpdate');
   if (lu && firstFetched)
@@ -82,20 +89,106 @@ function initUI() {
   document.getElementById('paramsBar').style.display     = 'flex';
   hideEl('emptyState'); hideEl('loading');
 
-  sel.value = '__compare__';
+  // Default: comparison table
+  selectedTickers = [];
+  updateDropdownLabel();
   renderComparison();
 }
 
-function onTickerSelect() {
-  const t = document.getElementById('tickerSelect').value;
-  if (t === '__compare__') renderComparison();
-  else if (t) selectTicker(t);
+function ddItem(ticker, name) {
+  return `<label class="dd-item" id="ddItem_${ticker}">
+    <input type="checkbox" id="chk_${ticker}"
+      onchange="onTickerCheck('${ticker}', this.checked)"
+      onclick="event.stopPropagation()">
+    <span><strong>${ticker}</strong> <span style="color:#4b5563;font-size:.75rem">— ${name}</span></span>
+  </label>`;
 }
 
+// ── Dropdown toggle ───────────────────────────────────────────────────────────
+function toggleDropdown() {
+  const menu = document.getElementById('ddMenu');
+  const btn  = document.getElementById('ddBtn');
+  const open = menu.style.display === 'none';
+  menu.style.display = open ? 'block' : 'none';
+  btn.classList.toggle('open', open);
+}
+
+// Close on outside click
+document.addEventListener('click', e => {
+  const wrap = document.getElementById('ddWrap');
+  if (wrap && !wrap.contains(e.target)) {
+    document.getElementById('ddMenu').style.display = 'none';
+    document.getElementById('ddBtn').classList.remove('open');
+  }
+});
+
+// ── Ticker selection ──────────────────────────────────────────────────────────
+function selectCompare() {
+  // Deselect all
+  selectedTickers.forEach(t => {
+    const chk = document.getElementById('chk_'+t);
+    if (chk) chk.checked = false;
+    document.getElementById('ddItem_'+t)?.classList.remove('selected');
+  });
+  selectedTickers = [];
+  updateDropdownLabel();
+  closeDropdown();
+  renderComparison();
+}
+
+function onTickerCheck(ticker, checked) {
+  if (checked) {
+    if (selectedTickers.length >= 2) {
+      // Remove oldest selection
+      const removed = selectedTickers.shift();
+      const chk = document.getElementById('chk_'+removed);
+      if (chk) chk.checked = false;
+      document.getElementById('ddItem_'+removed)?.classList.remove('selected');
+    }
+    selectedTickers.push(ticker);
+    document.getElementById('ddItem_'+ticker)?.classList.add('selected');
+  } else {
+    selectedTickers = selectedTickers.filter(t => t !== ticker);
+    document.getElementById('ddItem_'+ticker)?.classList.remove('selected');
+  }
+
+  updateDropdownLabel();
+
+  if (selectedTickers.length === 0)      { closeDropdown(); renderComparison(); }
+  else if (selectedTickers.length === 1) { closeDropdown(); render(selectedTickers[0]); }
+  else if (selectedTickers.length === 2) { closeDropdown(); renderCompare2(selectedTickers[0], selectedTickers[1]); }
+}
+
+function updateDropdownLabel() {
+  const lbl = document.getElementById('ddLabel');
+  if (!lbl) return;
+  if (selectedTickers.length === 0) {
+    lbl.textContent = '📊 Tabla Comparativa';
+  } else if (selectedTickers.length === 1) {
+    lbl.textContent = selectedTickers[0];
+  } else {
+    lbl.textContent = selectedTickers[0] + '  vs  ' + selectedTickers[1];
+  }
+}
+
+function closeDropdown() {
+  document.getElementById('ddMenu').style.display = 'none';
+  document.getElementById('ddBtn').classList.remove('open');
+}
+
+// ── Navigate from comparison table row ───────────────────────────────────────
 function selectTicker(ticker) {
-  currentTicker = ticker;
-  const sel = document.getElementById('tickerSelect');
-  if (sel) sel.value = ticker;
+  // Deselect previous
+  selectedTickers.forEach(t => {
+    const chk = document.getElementById('chk_'+t);
+    if (chk) chk.checked = false;
+    document.getElementById('ddItem_'+t)?.classList.remove('selected');
+  });
+  selectedTickers = [ticker];
+  const chk = document.getElementById('chk_'+ticker);
+  if (chk) chk.checked = true;
+  document.getElementById('ddItem_'+ticker)?.classList.add('selected');
+  updateDropdownLabel();
   document.getElementById('content').innerHTML = '';
   document.getElementById('errBox').style.display = 'none';
   render(ticker);
@@ -103,12 +196,12 @@ function selectTicker(ticker) {
 }
 
 function recalc() {
-  const sel = document.getElementById('tickerSelect');
-  if (sel?.value === '__compare__') renderComparison();
-  else if (currentTicker) render(currentTicker);
+  if (selectedTickers.length === 0)      renderComparison();
+  else if (selectedTickers.length === 1) render(selectedTickers[0]);
+  else                                   renderCompare2(selectedTickers[0], selectedTickers[1]);
 }
 
-// ── Read params from UI ───────────────────────────────────────────────────────
+// ── Params ────────────────────────────────────────────────────────────────────
 function getParams() {
   return {
     tPER:      +document.getElementById('t_per').value      || DEFAULTS.per,
@@ -134,7 +227,29 @@ function calcYoY(arr, idx) {
   }
   return (curr/prev-1)*100;
 }
+function yoyArr(arr) { return arr.map((_,i) => i===0?null:calcYoY(arr,i)); }
 
+// ── Sortable table helper (called from render.js) ─────────────────────────────
+let sortState = { col: null, dir: 1 };
+
+function makeSortable(tableId, rows, renderFn) {
+  const table = document.getElementById(tableId);
+  if (!table) return;
+  table.querySelectorAll('thead th.sortable').forEach((th, idx) => {
+    th.addEventListener('click', () => {
+      const col = th.dataset.col;
+      if (sortState.col === col) sortState.dir *= -1;
+      else { sortState.col = col; sortState.dir = 1; }
+      // Update header classes
+      table.querySelectorAll('thead th').forEach(h => {
+        h.classList.remove('sort-asc','sort-desc');
+      });
+      th.classList.add(sortState.dir === 1 ? 'sort-desc' : 'sort-asc');
+      // Re-render sorted
+      renderFn(col, sortState.dir);
+    });
+  });
+}
 function yoyArr(arr) {
   return arr.map((_,i) => i===0 ? null : calcYoY(arr,i));
 }
