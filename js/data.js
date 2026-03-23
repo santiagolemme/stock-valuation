@@ -19,7 +19,7 @@ async function loadWatchlist() {
   try {
     const base = IS_GITHUB
       ? `https://${GITHUB_USER}.github.io/${GITHUB_REPO}`
-      : '.';
+      : './data';
     const wl = await fetch(`${base}/watchlist.json`).then(r => r.json());
     MAG7      = wl.mag7      || [];
     WATCHLIST = wl.watchlist || [];
