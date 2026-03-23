@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stock Valuation Tool</title>
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>📈 Stock Valuation Tool</h1>
+    <p>Datos desde yfinance · Sin dependencia de APIs externas</p>
+  </div>
+  <div class="header-right">
+    <div id="datePickerWrap">
+      <span>Versión:</span>
+      <select id="dateSelect" class="hdr-sel" onchange="onDateChange()">
+        <option value="">Seleccioná una fecha...</option>
+      </select>
+    </div>
+    <button id="filePickerBtn" class="load-btn" onclick="document.getElementById('fileInput').click()">📂 Cargar JSON</button>
+    <input type="file" id="fileInput" accept=".json" onchange="loadFile(event)">
+  </div>
+</div>
+
+<div class="ticker-section" id="tickerSection">
+  <div class="ticker-row" id="tickerRow">
+    <span class="row-label">Ticker</span>
+    <select class="wl-sel" id="tickerSelect" onchange="onTickerSelect()" style="max-width:280px"></select>
+    <span class="last-update" id="lastUpdate"></span>
+  </div>
+</div>
+
+<div class="params-bar" id="paramsBar">
+  <div class="tgroup"><span class="tlabel">PER obj.</span><input type="number" id="t_per" value="20" step="0.5"></div>
+  <div class="tgroup"><span class="tlabel">EV/FCF</span><input type="number" id="t_evcf" value="20" step="0.5"></div>
+  <div class="tgroup"><span class="tlabel">EV/EBITDA</span><input type="number" id="t_evebitda" value="11" step="0.5"></div>
+  <div class="tgroup"><span class="tlabel">EV/EBIT</span><input type="number" id="t_evebit" value="14" step="0.5"></div>
+  <div class="tgroup"><span class="tlabel">Crec. % anual</span><input type="number" id="t_growth" value="12" step="1"></div>
+  <div class="tgroup"><span class="tlabel">WACC %</span><input type="number" id="t_wacc" value="10" step="0.5"></div>
+  <div class="sep"></div>
+  <button class="btn btn-primary" onclick="recalc()">⟳ Recalcular</button>
+</div>
+
+<div class="error-box" id="errBox"></div>
+<div class="loading" id="loading">
+  <div class="spinner"></div>
+  <div class="status-txt" id="statusTxt">Cargando...</div>
+</div>
+<div class="empty-state" id="emptyState">
+  <div class="icon">📂</div>
+  <p>Primero corré el script Python para generar el archivo de datos.</p>
+  <p style="margin-top:12px"><code>magnificent7_YYYYMMDD.json</code></p>
+  <p style="margin-top:12px;font-size:.8rem">Luego hacé clic en <strong style="color:#4ade80">Cargar JSON</strong> para comenzar.</p>
+</div>
+<div class="content" id="content"></div>
+<div class="note">⚠️ Las proyecciones son estimaciones. No constituye asesoramiento financiero.</div>
+
+<!-- Libraries -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+
+<!-- App modules -->
+<script src="js/config.js"></script>
+<script src="js/data.js"></script>
+<script src="js/charts.js"></script>
+<script src="js/render.js"></script>
+<script src="js/ui.js"></script>
+
+</body>
+</html>
