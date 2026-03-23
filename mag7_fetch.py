@@ -203,7 +203,60 @@ def fetch_ticker(ticker):
             "cash":        cash_v,
         })
 
-    # ── TTM (últimos 4 quarters) ─────────────────────────────────────────────
+    # ── QUARTERLY DATA (para gráficos) ──────────────────────────────────────
+    quarterly = []
+    
+    # Obtener todas las fechas de quarters disponibles
+    qtrs = set()
+    for df in [inc_qtr, bal_qtr, cf_qtr]:
+        if df is not None and not df.empty:
+            qtrs.update([str(c)[:10] for c in df.columns])
+    qtrs = sorted(qtrs)[-20:]  # últimos 20 quarters (~5 años)
+
+    for qdate in qtrs:
+        def qget(df, *keys):
+            if df is None or df.empty: return 0
+            # buscar columna que empiece con qdate
+            cols = [c for c in df.columns if str(c)[:10] == qdate]
+            if not cols: return 0
+            col = cols[0]
+            for k in keys:
+                if k in df.index:
+                    v = df.loc[k, col]
+                    return safe(v)
+            return 0
+
+        q_rev    = qget(inc_qtr, "Total Revenue")
+        q_ebit   = qget(inc_qtr, "Operating Income", "EBIT")
+        q_ni     = qget(inc_qtr, "Net Income")
+        q_eps    = qget(inc_qtr, "Basic EPS", "Diluted EPS")
+        q_da     = abs(qget(cf_qtr, "Depreciation And Amortization", "Depreciation"))
+        q_opcf   = qget(cf_qtr, "Operating Cash Flow")
+        q_capex  = qget(cf_qtr, "Capital Expenditure")
+        q_fcf    = qget(cf_qtr, "Free Cash Flow") or (q_opcf + q_capex)
+        q_ebitda = q_ebit + q_da
+        q_ltdebt = qget(bal_qtr, "Long Term Debt")
+        q_stdebt = qget(bal_qtr, "Current Debt", "Short Term Debt")
+        q_cash   = qget(bal_qtr, "Cash And Cash Equivalents", "Cash")
+        q_nd     = q_ltdebt + q_stdebt - q_cash
+        q_shares = safe(inf.get("sharesOutstanding", 0))
+
+        # Precio de cierre al final del quarter
+        q_price  = price_at_fiscal_end(qdate)
+
+        quarterly.append({
+            "date":        qdate,
+            "revenue":     q_rev,
+            "ebitda":      q_ebitda,
+            "ebit":        q_ebit,
+            "net_income":  q_ni,
+            "fcf":         q_fcf,
+            "eps":         q_eps,
+            "net_debt":    q_nd,
+            "cash":        q_cash,
+            "shares":      q_shares,
+            "price":       q_price,
+        })
     ttm_rev,  ttm_rev_lbl  = calc_ttm(get_row(inc_qtr, "Total Revenue"))
     ttm_ebit, _            = calc_ttm(get_row(inc_qtr, "Operating Income", "EBIT"))
     ttm_ni,   _            = calc_ttm(get_row(inc_qtr, "Net Income"))
@@ -245,7 +298,7 @@ def fetch_ticker(ticker):
         "cash":       ttm_cash,
     })
 
-    print(f"✅  {len(historical)-1} años + TTM ({ttm_lbl})")
+    print(f"✅  {len(historical)-1} años + TTM ({ttm_lbl}) · {len(quarterly)} quarters")
 
     return {
         "ticker":     ticker,
@@ -264,6 +317,7 @@ def fetch_ticker(ticker):
         "week52h":    safe(inf.get("fiftyTwoWeekHigh")),
         "week52l":    safe(inf.get("fiftyTwoWeekLow")),
         "historical": historical,
+        "quarterly":  quarterly,
         "fetched_at": datetime.now().isoformat(),
     }
 
