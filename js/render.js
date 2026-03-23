@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-//  RENDER — single ticker detail view + comparison table
+//  RENDER — single ticker detail + comparison table + 2-ticker compare
 // ─────────────────────────────────────────────────────────────────────────────
 
 function render(ticker) {
@@ -12,7 +12,6 @@ function render(ticker) {
   const p = getParams();
   const { tPER, tEVCF, tEVEBITDA, tEVEBIT, growth, wacc, termG, PROJ } = p;
 
-  // ── Base data ──────────────────────────────────────────────────────────────
   const price    = d.price      || 0;
   const prev     = d.prev_close || price;
   const chg      = price - prev;
@@ -41,7 +40,6 @@ function render(ticker) {
   const mEVEBITDA = lastEbitda ? ev     / lastEbitda : 0;
   const mEVEBIT   = lastEbit   ? ev     / lastEbit   : 0;
 
-  // ── Projections ────────────────────────────────────────────────────────────
   const lastYearRaw = histYears[N-1];
   const lastYear    = parseInt(String(lastYearRaw).match(/\d{4}/)?.[0] || lastYearRaw);
   const projYears   = Array.from({length:PROJ}, (_,i) => lastYear+i+1);
@@ -59,7 +57,6 @@ function render(ticker) {
   const terminal = pFCF[PROJ-1]*(1+termG)/(wacc-termG);
   const dcfPrice = (pvFCF+terminal/(1+wacc)**PROJ-curNetDebt)/sh;
 
-  // ── All arrays ─────────────────────────────────────────────────────────────
   const allYears  = [...histYears, ...projYears.map(y=>y+'e')];
   const allRev    = [...hRev,    ...pRev];
   const allEbitda = [...hEbitda, ...pEbitda];
@@ -69,7 +66,6 @@ function render(ticker) {
   const allEPS    = [...hEPS,    ...pEPS];
   const allND     = [...hND,     ...Array(PROJ).fill(curNetDebt)];
 
-  // ── Quality metrics ────────────────────────────────────────────────────────
   const revYoY        = yoyArr(allRev);
   const epsYoY        = yoyArr(allEPS);
   const ebitMargin    = allRev.map((v,i)    => v ? allEbit[i]/v*100   : null);
@@ -87,8 +83,7 @@ function render(ticker) {
     return ivPER[i-N]/eps;
   });
 
-  // ── Verdict ────────────────────────────────────────────────────────────────
-  const histPERs    = hist.slice(0,N-1)
+  const histPERs = hist.slice(0,N-1)
     .map((r,i) => { const hp=r.hist_price||null; return hp&&hEPS[i]?hp/hEPS[i]:null; })
     .filter(v => v&&v>0&&v<200);
   const avgHistPER    = histPERs.length ? histPERs.reduce((s,v)=>s+v,0)/histPERs.length : null;
@@ -113,12 +108,11 @@ function render(ticker) {
   const isHealthy    = healthyCount >= 3;
 
   let vClass, vIcon, vLabel, vDesc;
-  if      (isCheap&&isHealthy)  { vClass='buy';   vIcon='🟢'; vLabel='COMPRA';                vDesc=`PER actual (${fm(currentPER,1)}x) por debajo del histórico (${fm(avgHistPER,1)}x) y objetivo. Fundamentals sólidos (${healthyCount}/4).`; }
+  if      (isCheap&&isHealthy)  { vClass='buy';   vIcon='🟢'; vLabel='COMPRA';                    vDesc=`PER actual (${fm(currentPER,1)}x) por debajo del histórico (${fm(avgHistPER,1)}x) y objetivo. Fundamentals sólidos (${healthyCount}/4).`; }
   else if (isCheap&&!isHealthy) { vClass='watch'; vIcon='👀'; vLabel='ATENCIÓN — Precio atractivo'; vDesc=`PER bajo vs histórico pero fundamentals débiles (${healthyCount}/4 indicadores saludables).`; }
-  else if (!isCheap&&isHealthy) { vClass='hold';  vIcon='⏸️'; vLabel='MANTENER — Empresa sólida'; vDesc=`Fundamentals excelentes (${healthyCount}/4) pero PER actual (${fm(currentPER,1)}x) por encima del objetivo (${fm(tPER,1)}x).`; }
-  else                           { vClass='sell';  vIcon='🔴'; vLabel='CARA / EVITAR';          vDesc=`PER elevado vs histórico y objetivo. Fundamentals débiles (${healthyCount}/4).`; }
+  else if (!isCheap&&isHealthy) { vClass='hold';  vIcon='⏸️'; vLabel='MANTENER — Empresa sólida';  vDesc=`Fundamentals excelentes (${healthyCount}/4) pero PER actual (${fm(currentPER,1)}x) por encima del objetivo (${fm(tPER,1)}x).`; }
+  else                           { vClass='sell';  vIcon='🔴'; vLabel='CARA / EVITAR';              vDesc=`PER elevado vs histórico y objetivo. Fundamentals débiles (${healthyCount}/4).`; }
 
-  // ── HTML helpers ───────────────────────────────────────────────────────────
   const thCols = allYears.map((y,i)=>`<th class="${i>=N?'est':''}">${y}</th>`).join('');
 
   const metricRow = (lbl, vals, div=1e6, dec=0, hl=false) =>
@@ -153,7 +147,6 @@ function render(ticker) {
     return `<tr><td>${lbl}</td>${cells}</tr>`;
   };
 
-  // ── Render HTML ────────────────────────────────────────────────────────────
   document.getElementById('content').innerHTML = `
     <div class="s-header">
       <div class="s-title">
@@ -311,12 +304,11 @@ function render(ticker) {
 //  COMPARISON TABLE
 // ─────────────────────────────────────────────────────────────────────────────
 function renderComparison() {
-  currentTicker = null;
   const tickers = Object.keys(DB);
   const { tPER, tEVCF, growth } = getParams();
   const PROJ = DEFAULTS.projYears;
 
-  const col    = (v,dec=1,suf='') => v!==null&&!isNaN(v) ? fm(v,dec)+suf : '—';
+  const col    = (v,dec=1) => v!==null&&!isNaN(v) ? fm(v,dec) : '—';
   const pctCol = (v,dec=1) => {
     if(v===null||isNaN(v)) return '<td>—</td>';
     const c=v>=0?'#4ade80':'#f87171';
@@ -328,7 +320,7 @@ function renderComparison() {
     return `<td style="color:${cheap?'#4ade80':'#f87171'};font-weight:600">${fm(cur,1)}x</td>`;
   };
 
-  const rows = tickers.map(ticker => {
+  let rows = tickers.map(ticker => {
     const d=DB[ticker]; if(!d) return null;
     const hist=d.historical||[]; const N=hist.length; if(!N) return null;
 
@@ -356,6 +348,13 @@ function renderComparison() {
       .filter(v=>v&&v>0&&v<200);
     const avgHistPER = histPERs.length ? histPERs.reduce((s,v)=>s+v,0)/histPERs.length : null;
 
+    const histEVEBs = hist.slice(0,N-1).map((r,i)=>{
+      const hp=r.hist_price||null, nd=hND[i], eb=hEbitda[i];
+      if(!hp||!shares||!eb) return null;
+      return (hp*shares+nd)/eb;
+    }).filter(v=>v&&v>0&&v<200);
+    const avgHistEVEBITDA = histEVEBs.length ? histEVEBs.reduce((s,v)=>s+v,0)/histEVEBs.length : null;
+
     const pNI5=lastNI*(1+growth)**PROJ, pFCF5=lastFCF*(1+growth)**PROJ;
     const ivAvg5=((pNI5*tPER)/shares + (pFCF5*tEVCF-lastND)/shares)/2;
     const cagrAvg=price&&ivAvg5?((ivAvg5/price)**(1/5)-1)*100:null;
@@ -379,39 +378,214 @@ function renderComparison() {
     else if(isHealthy)        {verdict='⏸️ MANTENER'; vColor='#fbbf24';}
     else                      {verdict='🔴 EVITAR';   vColor='#f87171';}
 
-    return {ticker,d,price,currentPER,avgHistPER,mEVCF,mEVEBITDA,
-            debtEbitda,fcfQuality,cagrAvg,revYoY,epsYoY,
-            verdict,vColor,lastDataDate,tEVCF};
+    return { ticker, d, price, currentPER, avgHistPER, mEVCF, mEVEBITDA,
+             avgHistEVEBITDA, debtEbitda, fcfQuality, cagrAvg, revYoY, epsYoY,
+             verdict, vColor, lastDataDate, tEVCF, healthyCount };
   }).filter(Boolean);
 
+  const colMap = {
+    price:'price', per:'currentPER', perAvg:'avgHistPER',
+    evcf:'mEVCF', evebitda:'mEVEBITDA', evebitdaAvg:'avgHistEVEBITDA',
+    revyoy:'revYoY', epsyoy:'epsYoY', fcfni:'fcfQuality',
+    debt:'debtEbitda', cagr:'cagrAvg'
+  };
+
+  function buildTable(sortCol=null, sortDir=-1) {
+    let sorted = [...rows];
+    if (sortCol && colMap[sortCol]) {
+      sorted.sort((a,b) => {
+        const av=a[colMap[sortCol]], bv=b[colMap[sortCol]];
+        if(av===null||av===undefined) return 1;
+        if(bv===null||bv===undefined) return -1;
+        return (av-bv)*sortDir;
+      });
+    }
+    const tbody = document.getElementById('compTbody');
+    if (!tbody) return;
+    tbody.innerHTML = sorted.map(r=>`
+      <tr style="cursor:pointer" onclick="selectTicker('${r.ticker}')">
+        <td><strong style="color:#fff">${r.ticker}</strong><br><span style="font-size:.7rem;color:#4b5563">${r.d.name||''}</span></td>
+        <td>${col(r.price,2)}</td>
+        <td style="font-size:.75rem;color:#4b5563">${r.lastDataDate}</td>
+        ${perCol(r.currentPER,r.avgHistPER)}
+        <td style="color:#94a3b8">${col(r.avgHistPER,1)}x</td>
+        <td style="color:${r.mEVCF&&r.mEVCF<r.tEVCF?'#4ade80':'#f87171'}">${col(r.mEVCF,1)}x</td>
+        <td style="color:${r.mEVEBITDA&&r.avgHistEVEBITDA&&r.mEVEBITDA<r.avgHistEVEBITDA?'#4ade80':'#e2e8f0'}">${col(r.mEVEBITDA,1)}x</td>
+        <td style="color:#94a3b8">${col(r.avgHistEVEBITDA,1)}x</td>
+        ${pctCol(r.revYoY)}
+        ${pctCol(r.epsYoY)}
+        <td style="color:${r.fcfQuality>=1?'#4ade80':r.fcfQuality>=0.8?'#fbbf24':'#f87171'}">${col(r.fcfQuality,2)}</td>
+        <td style="color:${r.debtEbitda!==null&&r.debtEbitda<2?'#4ade80':r.debtEbitda!==null&&r.debtEbitda<3?'#fbbf24':'#f87171'}">${col(r.debtEbitda,1)}x</td>
+        <td style="color:${r.cagrAvg>12?'#4ade80':r.cagrAvg>6?'#fbbf24':'#f87171'};font-weight:700">${col(r.cagrAvg,0)}%</td>
+        <td style="color:${r.vColor};font-weight:700;white-space:nowrap">${r.verdict}</td>
+      </tr>`).join('');
+  }
+
+  const th = (label, col, right=true) =>
+    `<th class="sortable" data-col="${col}" style="text-align:${right?'right':'left'}">${label}</th>`;
+
   document.getElementById('content').innerHTML = `
-    <div class="sec-title" style="margin-bottom:16px">📊 Tabla Comparativa — Todos los Tickers</div>
-    <div class="t-wrap"><table>
+    <div class="sec-title" style="margin-bottom:16px">📊 Tabla Comparativa</div>
+    <div class="t-wrap"><table id="compTable">
       <thead><tr>
-        <th style="text-align:left">Ticker</th>
-        <th>Precio</th><th>Último dato</th><th>PER actual</th><th>PER hist. avg</th>
-        <th>EV/FCF</th><th>EV/EBITDA</th><th>Rev Y/Y</th><th>EPS Y/Y</th>
-        <th>FCF/NI</th><th>Deuda/EBITDA</th><th>CAGR 5a</th><th>Veredicto</th>
+        ${th('Ticker','ticker',false)}
+        ${th('Precio','price')}
+        <th>Último dato</th>
+        ${th('PER actual','per')}
+        ${th('PER hist. avg','perAvg')}
+        ${th('EV/FCF','evcf')}
+        ${th('EV/EBITDA','evebitda')}
+        ${th('EV/EBITDA avg','evebitdaAvg')}
+        ${th('Rev Y/Y','revyoy')}
+        ${th('EPS Y/Y','epsyoy')}
+        ${th('FCF/NI','fcfni')}
+        ${th('Deuda/EBITDA','debt')}
+        ${th('CAGR 5a','cagr')}
+        <th>Veredicto</th>
+      </tr></thead>
+      <tbody id="compTbody"></tbody>
+    </table></div>
+    <p style="font-size:.72rem;color:#4b5563;margin-top:8px">Click en header para ordenar · Click en fila para ver detalle</p>
+  `;
+
+  buildTable();
+  showEl('content');
+
+  document.querySelectorAll('#compTable thead th.sortable').forEach(th => {
+    th.addEventListener('click', () => {
+      const col = th.dataset.col;
+      if (sortState.col===col) sortState.dir*=-1;
+      else { sortState.col=col; sortState.dir=-1; }
+      document.querySelectorAll('#compTable thead th').forEach(h=>h.classList.remove('sort-asc','sort-desc'));
+      th.classList.add(sortState.dir===-1?'sort-desc':'sort-asc');
+      buildTable(sortState.col, sortState.dir);
+    });
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  COMPARE 2 TICKERS
+// ─────────────────────────────────────────────────────────────────────────────
+function renderCompare2(tickerA, tickerB) {
+  document.getElementById('content').innerHTML = '';
+  document.getElementById('errBox').style.display = 'none';
+
+  const dA = DB[tickerA], dB = DB[tickerB];
+  if (!dA || !dB) return;
+
+  const { tPER, tEVCF, growth } = getParams();
+
+  const getMetrics = (d) => {
+    const hist=d.historical||[], N=hist.length;
+    const price=d.price||0, mktCap=d.mkt_cap||0;
+    const hRev=hist.map(r=>r.revenue||0),    hEbitda=hist.map(r=>r.ebitda||0);
+    const hEbit=hist.map(r=>r.ebit||0),      hNI=hist.map(r=>r.net_income||0);
+    const hFCF=hist.map(r=>r.fcf||0),        hEPS=hist.map(r=>r.eps||0);
+    const hND=hist.map(r=>r.net_debt||0);
+    const lastNI=hNI[N-1], lastFCF=hFCF[N-1];
+    const lastEbitda=hEbitda[N-1], lastEbit=hEbit[N-1], lastND=hND[N-1];
+    const ev=mktCap+lastND, sh=d.shares||1;
+    return { price, mktCap, ev, sh, hist, N,
+      hRev, hEbit, hNI, hFCF, hEPS, hND, hEbitda,
+      per:       hEPS[N-1]   ? price/hEPS[N-1]   : null,
+      evcf:      lastFCF     ? ev/lastFCF         : null,
+      evebitda:  lastEbitda  ? ev/lastEbitda      : null,
+      evebit:    lastEbit    ? ev/lastEbit         : null,
+      netMargin: hRev[N-1]   ? lastNI/hRev[N-1]*100   : null,
+      ebitMargin:hRev[N-1]   ? lastEbit/hRev[N-1]*100 : null,
+      revYoY:    calcYoY(hRev,N-1),
+      epsYoY:    calcYoY(hEPS,N-1),
+      fcfYoY:    calcYoY(hFCF,N-1),
+      roic:      (()=>{ const e=mktCap+lastND; return e?lastEbit/e*100:null; })(),
+      debtEbitda:lastEbitda ? lastND/lastEbitda : null,
+      fcfNI:     lastNI     ? lastFCF/lastNI    : null,
+      iv5: ((lastNI*(1+growth)**5*tPER)/sh + (lastFCF*(1+growth)**5*tEVCF-lastND)/sh)/2,
+    };
+  };
+
+  const mA=getMetrics(dA), mB=getMetrics(dB);
+  const cagrA = mA.price&&mA.iv5 ? ((mA.iv5/mA.price)**(1/5)-1)*100 : null;
+  const cagrB = mB.price&&mB.iv5 ? ((mB.iv5/mB.price)**(1/5)-1)*100 : null;
+
+  const win = (a, b, lowerBetter=false) => {
+    if(a===null||b===null) return ['',''];
+    return (lowerBetter ? a<b : a>b)
+      ? ['color:#4ade80;font-weight:700','color:#e2e8f0']
+      : ['color:#e2e8f0','color:#4ade80;font-weight:700'];
+  };
+
+  const row = (label, va, vb, dec=1, lowerBetter=false, suffix='') => {
+    const [ca,cb]=win(va,vb,lowerBetter);
+    const fmt = v => v!==null&&!isNaN(v) ? fm(v,dec)+suffix : '—';
+    return `<tr><td style="color:#94a3b8">${label}</td>
+      <td style="text-align:right;${ca}">${fmt(va)}</td>
+      <td style="text-align:right;${cb}">${fmt(vb)}</td></tr>`;
+  };
+
+  const pctRow = (label, va, vb, lowerBetter=false) => {
+    const [ca,cb]=win(va,vb,lowerBetter);
+    const fmt = v => v!==null&&!isNaN(v) ? (v>=0?'+':'')+fm(v,1)+'%' : '—';
+    const styleA = ca || (va!==null ? va>=0?'color:#4ade80':'color:#f87171' : '');
+    const styleB = cb || (vb!==null ? vb>=0?'color:#4ade80':'color:#f87171' : '');
+    return `<tr><td style="color:#94a3b8">${label}</td>
+      <td style="text-align:right;${styleA}">${fmt(va)}</td>
+      <td style="text-align:right;${styleB}">${fmt(vb)}</td></tr>`;
+  };
+
+  const secRow = label =>
+    `<tr><td colspan="3" style="padding:4px 11px;background:#111827;color:#4b5563;font-size:.72rem;text-transform:uppercase">${label}</td></tr>`;
+
+  document.getElementById('content').innerHTML = `
+    <div class="s-header">
+      <div class="s-title">
+        <h2>⚖️ ${tickerA} vs ${tickerB}</h2>
+        <div class="sub">${[dA.sector, dB.sector].filter(Boolean).join(' · ')}</div>
+      </div>
+    </div>
+
+    <div class="t-wrap" style="margin-bottom:20px"><table>
+      <thead><tr>
+        <th style="text-align:left;min-width:200px">Métrica</th>
+        <th style="text-align:right;color:#4ade80;font-size:.95rem">${tickerA}
+          <div style="font-size:.7rem;font-weight:400;color:#94a3b8">${dA.name||''}</div></th>
+        <th style="text-align:right;color:#60a5fa;font-size:.95rem">${tickerB}
+          <div style="font-size:.7rem;font-weight:400;color:#94a3b8">${dB.name||''}</div></th>
       </tr></thead>
       <tbody>
-        ${rows.map(r=>`<tr style="cursor:pointer" onclick="selectTicker('${r.ticker}')">
-          <td><strong style="color:#fff">${r.ticker}</strong><br><span style="font-size:.7rem;color:#4b5563">${r.d.name||''}</span></td>
-          <td>${col(r.price,2)}</td>
-          <td style="font-size:.75rem;color:#4b5563">${r.lastDataDate}</td>
-          ${perCol(r.currentPER,r.avgHistPER)}
-          <td style="color:#94a3b8">${col(r.avgHistPER,1)}x</td>
-          <td style="color:${r.mEVCF&&r.mEVCF<r.tEVCF?'#4ade80':'#f87171'}">${col(r.mEVCF,1)}x</td>
-          <td>${col(r.mEVEBITDA,1)}x</td>
-          ${pctCol(r.revYoY)}
-          ${pctCol(r.epsYoY)}
-          <td style="color:${r.fcfQuality>=1?'#4ade80':r.fcfQuality>=0.8?'#fbbf24':'#f87171'}">${col(r.fcfQuality,2)}</td>
-          <td style="color:${r.debtEbitda!==null&&r.debtEbitda<2?'#4ade80':r.debtEbitda!==null&&r.debtEbitda<3?'#fbbf24':'#f87171'}">${col(r.debtEbitda,1)}x</td>
-          <td style="color:${r.cagrAvg>12?'#4ade80':r.cagrAvg>6?'#fbbf24':'#f87171'};font-weight:700">${col(r.cagrAvg,0)}%</td>
-          <td style="color:${r.vColor};font-weight:700;white-space:nowrap">${r.verdict}</td>
-        </tr>`).join('')}
+        ${secRow('Precio & Valoración')}
+        ${row('Precio',             mA.price,      mB.price,      2)}
+        ${row('Market Cap',         mA.mktCap/1e9, mB.mktCap/1e9, 1, false, 'B')}
+        ${row('PER actual',         mA.per,        mB.per,        1, true,  'x')}
+        ${row('EV/FCF',             mA.evcf,       mB.evcf,       1, true,  'x')}
+        ${row('EV/EBITDA',          mA.evebitda,   mB.evebitda,   1, true,  'x')}
+        ${row('EV/EBIT',            mA.evebit,     mB.evebit,     1, true,  'x')}
+        ${row('IV Promedio año 5',  mA.iv5,        mB.iv5,        2)}
+        ${row('CAGR 5a estimado',   cagrA,         cagrB,         1, false, '%')}
+        ${secRow('Calidad & Crecimiento')}
+        ${pctRow('Revenue Y/Y %',   mA.revYoY,    mB.revYoY)}
+        ${pctRow('EPS Y/Y %',       mA.epsYoY,    mB.epsYoY)}
+        ${pctRow('FCF Y/Y %',       mA.fcfYoY,    mB.fcfYoY)}
+        ${row('EBIT Margin %',      mA.ebitMargin, mB.ebitMargin, 1, false, '%')}
+        ${row('Net Margin %',       mA.netMargin,  mB.netMargin,  1, false, '%')}
+        ${row('ROIC %',             mA.roic,       mB.roic,       1, false, '%')}
+        ${row('FCF / Net Income',   mA.fcfNI,      mB.fcfNI,      2)}
+        ${row('Deuda / EBITDA',     mA.debtEbitda, mB.debtEbitda, 1, true,  'x')}
       </tbody>
     </table></div>
-    <p style="font-size:.72rem;color:#4b5563;margin-top:8px">Click en cualquier fila para ver el análisis detallado.</p>
+
+    <div class="sec-title" style="margin-bottom:12px">📈 Gráficos Comparativos</div>
+    <div class="charts-grid">
+      <div class="chart-wrap"><h3>Revenue Anual (M)</h3><canvas id="cmpRev"></canvas></div>
+      <div class="chart-wrap"><h3>FCF Anual (M)</h3><canvas id="cmpFCF"></canvas></div>
+      <div class="chart-wrap"><h3>EBIT Margin %</h3><canvas id="cmpMargins"></canvas></div>
+      <div class="chart-wrap"><h3>EPS</h3><canvas id="cmpEPS"></canvas></div>
+      <div class="chart-wrap"><h3>EV/EBITDA Histórico</h3><canvas id="cmpEVEB"></canvas></div>
+      <div class="chart-wrap"><h3>Precio Histórico (USD)</h3><canvas id="cmpPrice"></canvas></div>
+      <div class="chart-wrap"><h3>ROIC %</h3><canvas id="cmpROIC"></canvas></div>
+      <div class="chart-wrap"><h3>Deuda / EBITDA</h3><canvas id="cmpDebt"></canvas></div>
+    </div>
   `;
+
   showEl('content');
+  renderCompareCharts(tickerA, dA, mA, tickerB, dB, mB);
 }
