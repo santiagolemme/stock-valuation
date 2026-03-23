@@ -3,7 +3,9 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 function renderCharts(d, annual) {
-  const { hRev, hEbit, hNI, hFCF, hEbitda, hND, hEPS, histYears, price, mktCap // ─────────────────────────────────────────────────────────────────────────────
+  const { hRev, hEbit, hNI, hFCF, hEbitda, hND, hEPS, histYears, price, mktCap };
+
+// ─────────────────────────────────────────────────────────────────────────────
 //  COMPARE 2 TICKERS — charts with 2 overlapping series
 // ─────────────────────────────────────────────────────────────────────────────
 function renderCompareCharts(tickerA, dA, mA, tickerB, dB, mB) {
