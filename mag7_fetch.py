@@ -24,7 +24,7 @@ warnings.filterwarnings("ignore")
 
 # ── Cargar tickers desde watchlist.json ──────────────────────────────────────
 SCRIPT_DIR     = os.path.dirname(os.path.abspath(__file__))
-WATCHLIST_FILE = os.path.join(SCRIPT_DIR, "watchlist.json")
+WATCHLIST_FILE = os.path.join(SCRIPT_DIR, "data", "watchlist.json")
 
 with open(WATCHLIST_FILE, "r", encoding="utf-8") as f:
     watchlist_cfg = json.load(f)
