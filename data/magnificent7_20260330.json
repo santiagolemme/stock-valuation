@@ -6,12 +6,12 @@
     "industry": "Consumer Electronics",
     "currency": "USD",
     "exchange": "NMS",
-    "price": 248.8,
-    "prev_close": 252.89,
-    "mkt_cap": 3656844050432.0,
+    "price": 246.85,
+    "prev_close": 248.8,
+    "mkt_cap": 3628183060480.0,
     "shares": 14681140000.0,
     "beta": 1.116,
-    "fwd_pe": 26.709553,
+    "fwd_pe": 26.500214,
     "div_yield": 0.42,
     "week52h": 288.62,
     "week52l": 169.21,
@@ -165,7 +165,7 @@
         "price": 271.61
       }
     ],
-    "fetched_at": "2026-03-30T12:56:01.543289"
+    "fetched_at": "2026-03-30T16:15:10.132072"
   },
   "MSFT": {
     "ticker": "MSFT",
@@ -174,12 +174,12 @@
     "industry": "Software - Infrastructure",
     "currency": "USD",
     "exchange": "NMS",
-    "price": 356.77,
-    "prev_close": 365.97,
-    "mkt_cap": 2651649474560.0,
+    "price": 363.18,
+    "prev_close": 356.77,
+    "mkt_cap": 2699291000832.0,
     "shares": 7425629076.0,
     "beta": 1.108,
-    "fwd_pe": 18.926298,
+    "fwd_pe": 19.266342,
     "div_yield": 1.02,
     "week52h": 555.45,
     "week52l": 344.79,
@@ -333,7 +333,7 @@
         "price": 482.52
       }
     ],
-    "fetched_at": "2026-03-30T12:56:03.413657"
+    "fetched_at": "2026-03-30T16:15:12.279011"
   },
   "GOOGL": {
     "ticker": "GOOGL",
@@ -342,12 +342,12 @@
     "industry": "Internet Content & Information",
     "currency": "USD",
     "exchange": "NMS",
-    "price": 274.34,
-    "prev_close": 280.965,
-    "mkt_cap": 3318691135488.0,
+    "price": 274.9,
+    "prev_close": 274.34,
+    "mkt_cap": 3325465460736.0,
     "shares": 5822000000.0,
     "beta": 1.112,
-    "fwd_pe": 20.430185,
+    "fwd_pe": 20.471888,
     "div_yield": 0.31,
     "week52h": 349.0,
     "week52l": 140.53,
@@ -501,7 +501,7 @@
         "price": 312.78
       }
     ],
-    "fetched_at": "2026-03-30T12:56:04.975901"
+    "fetched_at": "2026-03-30T16:15:14.307230"
   },
   "AMZN": {
     "ticker": "AMZN",
@@ -510,12 +510,12 @@
     "industry": "Internet Retail",
     "currency": "USD",
     "exchange": "NMS",
-    "price": 199.34,
-    "prev_close": 207.68,
-    "mkt_cap": 2139899035648.0,
+    "price": 203.03,
+    "prev_close": 199.34,
+    "mkt_cap": 2179510960128.0,
     "shares": 10734920870.0,
     "beta": 1.42,
-    "fwd_pe": 21.218708,
+    "fwd_pe": 21.61149,
     "div_yield": 0.0,
     "week52h": 258.6,
     "week52l": 161.38,
@@ -669,7 +669,7 @@
         "price": 230.82
       }
     ],
-    "fetched_at": "2026-03-30T12:56:06.521512"
+    "fetched_at": "2026-03-30T16:15:16.199745"
   },
   "NVDA": {
     "ticker": "NVDA",
@@ -678,12 +678,12 @@
     "industry": "Semiconductors",
     "currency": "USD",
     "exchange": "NMS",
-    "price": 167.52,
-    "prev_close": 171.24,
-    "mkt_cap": 4071573684224.0,
+    "price": 167.0,
+    "prev_close": 167.52,
+    "mkt_cap": 4058935197696.0,
     "shares": 24300000000.0,
     "beta": 2.375,
-    "fwd_pe": 15.0696945,
+    "fwd_pe": 15.022917,
     "div_yield": 0.02,
     "week52h": 212.19,
     "week52l": 86.62,
@@ -850,7 +850,7 @@
         "price": 191.12
       }
     ],
-    "fetched_at": "2026-03-30T12:56:08.370358"
+    "fetched_at": "2026-03-30T16:15:18.232505"
   },
   "META": {
     "ticker": "META",
@@ -859,12 +859,12 @@
     "industry": "Internet Content & Information",
     "currency": "USD",
     "exchange": "NMS",
-    "price": 525.72,
-    "prev_close": 547.75,
-    "mkt_cap": 1329837768704.0,
+    "price": 537.83,
+    "prev_close": 525.72,
+    "mkt_cap": 1360478470144.0,
     "shares": 2187177748.0,
     "beta": 1.279,
-    "fwd_pe": 14.652173,
+    "fwd_pe": 14.989771,
     "div_yield": 0.4,
     "week52h": 796.25,
     "week52l": 479.8,
@@ -1018,7 +1018,7 @@
         "price": 659.53
       }
     ],
-    "fetched_at": "2026-03-30T12:56:10.036211"
+    "fetched_at": "2026-03-30T16:15:20.236937"
   },
   "TSLA": {
     "ticker": "TSLA",
@@ -1027,12 +1027,12 @@
     "industry": "Auto Manufacturers",
     "currency": "USD",
     "exchange": "NMS",
-    "price": 361.83,
-    "prev_close": 372.11,
-    "mkt_cap": 1357742342144.0,
+    "price": 362.265,
+    "prev_close": 361.83,
+    "mkt_cap": 1359374843904.0,
     "shares": 3752431984.0,
     "beta": 1.926,
-    "fwd_pe": 128.74542,
+    "fwd_pe": 128.9002,
     "div_yield": 0.0,
     "week52h": 498.83,
     "week52l": 214.25,
@@ -1186,7 +1186,7 @@
         "price": 449.72
       }
     ],
-    "fetched_at": "2026-03-30T12:56:11.714279"
+    "fetched_at": "2026-03-30T16:15:22.221262"
   },
   "PLTR": {
     "ticker": "PLTR",
@@ -1195,12 +1195,12 @@
     "industry": "Software - Infrastructure",
     "currency": "USD",
     "exchange": "NMS",
-    "price": 143.06,
-    "prev_close": 147.56,
-    "mkt_cap": 342153101312.0,
+    "price": 141.6202,
+    "prev_close": 143.06,
+    "mkt_cap": 338709577728.0,
     "shares": 2291470751.0,
     "beta": 1.739,
-    "fwd_pe": 76.6096,
+    "fwd_pe": 75.83857,
     "div_yield": 0.0,
     "week52h": 207.52,
     "week52l": 66.12,
@@ -1354,7 +1354,7 @@
         "price": 177.75
       }
     ],
-    "fetched_at": "2026-03-30T12:56:13.355692"
+    "fetched_at": "2026-03-30T16:15:24.041281"
   },
   "V": {
     "ticker": "V",
@@ -1363,15 +1363,15 @@
     "industry": "Credit Services",
     "currency": "USD",
     "exchange": "NYQ",
-    "price": 295.52,
-    "prev_close": 305.53,
-    "mkt_cap": 569774243840.0,
+    "price": 300.185,
+    "prev_close": 295.52,
+    "mkt_cap": 578768535552.0,
     "shares": 1681093942.0,
     "beta": 0.791,
-    "fwd_pe": 20.328844,
+    "fwd_pe": 20.64975,
     "div_yield": 0.91,
     "week52h": 375.51,
-    "week52l": 294.32,
+    "week52l": 295.89,
     "historical": [
       {
         "year": "2022",
@@ -1522,7 +1522,7 @@
         "price": 349.99
       }
     ],
-    "fetched_at": "2026-03-30T12:56:15.047468"
+    "fetched_at": "2026-03-30T16:15:26.060107"
   },
   "YPF": {
     "ticker": "YPF",
@@ -1531,14 +1531,14 @@
     "industry": "Oil & Gas Integrated",
     "currency": "USD",
     "exchange": "NYQ",
-    "price": 45.17,
-    "prev_close": 43.68,
-    "mkt_cap": 18596184064.0,
+    "price": 47.43,
+    "prev_close": 45.17,
+    "mkt_cap": 19526610944.0,
     "shares": 392358852.0,
     "beta": 0.288,
-    "fwd_pe": 8.487092,
+    "fwd_pe": 8.911729,
     "div_yield": 0.0,
-    "week52h": 46.99,
+    "week52h": 47.84,
     "week52l": 22.82,
     "historical": [
       {
@@ -1690,7 +1690,7 @@
         "price": 36.16
       }
     ],
-    "fetched_at": "2026-03-30T12:56:16.822890"
+    "fetched_at": "2026-03-30T16:15:28.163891"
   },
   "MA": {
     "ticker": "MA",
@@ -1699,12 +1699,12 @@
     "industry": "Credit Services",
     "currency": "USD",
     "exchange": "NYQ",
-    "price": 484.24,
-    "prev_close": 500.75,
-    "mkt_cap": 432154017792.0,
+    "price": 494.76,
+    "prev_close": 484.24,
+    "mkt_cap": 441542475776.0,
     "shares": 885216386.0,
     "beta": 0.836,
-    "fwd_pe": 21.375011,
+    "fwd_pe": 21.83938,
     "div_yield": 0.72,
     "week52h": 601.77,
     "week52l": 465.59,
@@ -1858,7 +1858,7 @@
         "price": 570.02
       }
     ],
-    "fetched_at": "2026-03-30T12:56:18.537003"
+    "fetched_at": "2026-03-30T16:15:30.304648"
   },
   "MELI": {
     "ticker": "MELI",
@@ -1867,15 +1867,15 @@
     "industry": "Internet Retail",
     "currency": "USD",
     "exchange": "NMS",
-    "price": 1599.52,
-    "prev_close": 1630.99,
-    "mkt_cap": 81091158016.0,
+    "price": 1626.9401,
+    "prev_close": 1599.52,
+    "mkt_cap": 82481283072.0,
     "shares": 50697182.0,
     "beta": 1.527,
-    "fwd_pe": 21.780994,
+    "fwd_pe": 22.154379,
     "div_yield": 0.0,
     "week52h": 2645.22,
-    "week52l": 1593.21,
+    "week52l": 1598.23,
     "historical": [
       {
         "year": "2022",
@@ -2026,7 +2026,7 @@
         "price": 2014.26
       }
     ],
-    "fetched_at": "2026-03-30T12:56:20.224576"
+    "fetched_at": "2026-03-30T16:15:32.361613"
   },
   "AMD": {
     "ticker": "AMD",
@@ -2035,12 +2035,12 @@
     "industry": "Semiconductors",
     "currency": "USD",
     "exchange": "NMS",
-    "price": 201.99,
-    "prev_close": 203.77,
-    "mkt_cap": 329326690304.0,
+    "price": 197.85,
+    "prev_close": 201.99,
+    "mkt_cap": 322576809984.0,
     "shares": 1630410843.0,
     "beta": 2.022,
-    "fwd_pe": 18.747093,
+    "fwd_pe": 18.362852,
     "div_yield": 0.0,
     "week52h": 267.08,
     "week52l": 76.48,
@@ -2194,7 +2194,7 @@
         "price": 214.16
       }
     ],
-    "fetched_at": "2026-03-30T12:56:21.776457"
+    "fetched_at": "2026-03-30T16:15:34.272138"
   },
   "CVX": {
     "ticker": "CVX",
@@ -2203,14 +2203,14 @@
     "industry": "Oil & Gas Integrated",
     "currency": "USD",
     "exchange": "NYQ",
-    "price": 211.15,
-    "prev_close": 207.79,
-    "mkt_cap": 422163513344.0,
+    "price": 213.345,
+    "prev_close": 211.15,
+    "mkt_cap": 426552098816.0,
     "shares": 1981217539.0,
     "beta": 0.658,
-    "fwd_pe": 21.176538,
+    "fwd_pe": 21.396679,
     "div_yield": 3.37,
-    "week52h": 212.45,
+    "week52h": 214.71,
     "week52l": 132.04,
     "historical": [
       {
@@ -2362,7 +2362,7 @@
         "price": 150.93
       }
     ],
-    "fetched_at": "2026-03-30T12:56:23.572079"
+    "fetched_at": "2026-03-30T16:15:36.515923"
   },
   "XOM": {
     "ticker": "XOM",
@@ -2371,14 +2371,14 @@
     "industry": "Oil & Gas Integrated",
     "currency": "USD",
     "exchange": "NYQ",
-    "price": 170.99,
-    "prev_close": 165.43,
-    "mkt_cap": 712474886144.0,
+    "price": 174.36,
+    "prev_close": 170.99,
+    "mkt_cap": 726516891648.0,
     "shares": 4166763453.0,
     "beta": 0.348,
-    "fwd_pe": 18.560934,
+    "fwd_pe": 18.926746,
     "div_yield": 2.41,
-    "week52h": 171.2,
+    "week52h": 176.395,
     "week52l": 97.8,
     "historical": [
       {
@@ -2530,7 +2530,7 @@
         "price": 119.54
       }
     ],
-    "fetched_at": "2026-03-30T12:56:25.251310"
+    "fetched_at": "2026-03-30T16:15:38.645300"
   },
   "PG": {
     "ticker": "PG",
@@ -2539,12 +2539,12 @@
     "industry": "Household & Personal Products",
     "currency": "USD",
     "exchange": "NYQ",
-    "price": 142.71,
-    "prev_close": 142.42,
-    "mkt_cap": 334010679296.0,
+    "price": 144.62,
+    "prev_close": 142.71,
+    "mkt_cap": 338480988160.0,
     "shares": 2336733549.0,
     "beta": 0.34,
-    "fwd_pe": 19.479431,
+    "fwd_pe": 19.740137,
     "div_yield": 2.96,
     "week52h": 174.8,
     "week52l": 137.62,
@@ -2698,7 +2698,7 @@
         "price": 142.3
       }
     ],
-    "fetched_at": "2026-03-30T12:56:27.297718"
+    "fetched_at": "2026-03-30T16:15:41.039713"
   },
   "JNJ": {
     "ticker": "JNJ",
@@ -2707,12 +2707,12 @@
     "industry": "Drug Manufacturers - General",
     "currency": "USD",
     "exchange": "NYQ",
-    "price": 240.45,
-    "prev_close": 239.24,
-    "mkt_cap": 579460202496.0,
+    "price": 241.94,
+    "prev_close": 240.45,
+    "mkt_cap": 583050985472.0,
     "shares": 2408613219.0,
     "beta": 0.326,
-    "fwd_pe": 19.118612,
+    "fwd_pe": 19.237085,
     "div_yield": 2.16,
     "week52h": 251.71,
     "week52l": 141.5,
@@ -2866,7 +2866,7 @@
         "price": 205.86
       }
     ],
-    "fetched_at": "2026-03-30T12:56:29.091838"
+    "fetched_at": "2026-03-30T16:15:43.190539"
   },
   "GGAL": {
     "ticker": "GGAL",
@@ -2875,12 +2875,12 @@
     "industry": "Banks - Regional",
     "currency": "USD",
     "exchange": "NCM",
-    "price": 42.7,
-    "prev_close": 44.530003,
-    "mkt_cap": 7160931328.0,
+    "price": 43.62,
+    "prev_close": 42.540035,
+    "mkt_cap": 7315218432.0,
     "shares": 132503208.0,
     "beta": 0.601,
-    "fwd_pe": 5.3227954,
+    "fwd_pe": 5.4374785,
     "div_yield": 3.72,
     "week52h": 66.24,
     "week52l": 25.89,
@@ -3034,7 +3034,7 @@
         "price": 53.61
       }
     ],
-    "fetched_at": "2026-03-30T12:56:30.688349"
+    "fetched_at": "2026-03-30T16:15:45.222780"
   },
   "BAC": {
     "ticker": "BAC",
@@ -3043,12 +3043,12 @@
     "industry": "Banks - Diversified",
     "currency": "USD",
     "exchange": "NYQ",
-    "price": 46.97,
-    "prev_close": 48.24,
-    "mkt_cap": 337088774144.0,
+    "price": 47.295,
+    "prev_close": 46.97,
+    "mkt_cap": 339421167616.0,
     "shares": 7145709181.0,
     "beta": 1.263,
-    "fwd_pe": 9.473024,
+    "fwd_pe": 9.53857,
     "div_yield": 2.38,
     "week52h": 57.55,
     "week52l": 33.07,
@@ -3202,7 +3202,7 @@
         "price": 54.69
       }
     ],
-    "fetched_at": "2026-03-30T12:56:32.388347"
+    "fetched_at": "2026-03-30T16:15:47.164985"
   },
   "BE": {
     "ticker": "BE",
@@ -3211,12 +3211,12 @@
     "industry": "Electrical Equipment & Parts",
     "currency": "USD",
     "exchange": "NYQ",
-    "price": 133.24,
-    "prev_close": 133.52,
-    "mkt_cap": 37380247552.0,
+    "price": 117.71,
+    "prev_close": 133.24,
+    "mkt_cap": 33023330304.0,
     "shares": 280548215.0,
     "beta": 3.183,
-    "fwd_pe": 45.30509,
+    "fwd_pe": 40.024483,
     "div_yield": 0.0,
     "week52h": 180.9,
     "week52l": 15.15,
@@ -3370,6 +3370,6 @@
         "price": 86.89
       }
     ],
-    "fetched_at": "2026-03-30T12:56:34.083146"
+    "fetched_at": "2026-03-30T16:15:49.247854"
   }
 }
